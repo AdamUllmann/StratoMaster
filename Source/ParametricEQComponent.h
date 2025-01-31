@@ -38,6 +38,10 @@ private:
     juce::Label freqLabels[numBands];
     juce::Label gainLabels[numBands];
     juce::Label qLabels[numBands];
+    juce::Label bandNumberLabels[8];
+
+    juce::Label freqHeaderLabel;
+    juce::Label resHeaderLabel;
 
     EQBandAttachments bandAttachments[numBands];
 

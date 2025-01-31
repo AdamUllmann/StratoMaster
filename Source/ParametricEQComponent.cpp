@@ -37,10 +37,10 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
         addAndMakeVisible(freqLabels[i]);
 
         // --- gain knobs ---
-        gainSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        gainSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+        gainSliders[i].setSliderStyle(juce::Slider::LinearVertical);
+        gainSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
         addAndMakeVisible(gainSliders[i]);
-        gainSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
+        gainSliders[i].setColour(juce::Slider::trackColourId, bandColours[i]);
 
         auto gainParamID = "Band" + juce::String(i + 1) + "Gain";
         bandAttachments[i].gainAttachment.reset(
@@ -170,17 +170,22 @@ void ParametricEQComponent::drawSpectrum(juce::Graphics& g, juce::Rectangle<int>
 void ParametricEQComponent::resized()
 {
     auto bounds = getLocalBounds();
-    auto sliderArea = bounds.removeFromRight(300);
-    auto rowHeight = sliderArea.getHeight() / numBands;
+    auto controlArea = bounds.removeFromRight(300);
+    updateHandlePositions();
+    auto columnWidth = controlArea.getWidth() / numBands;
     for (int i = 0; i < numBands; ++i)
     {
-        auto rowBounds = sliderArea.removeFromTop(rowHeight);
-        auto sliderWidth = rowBounds.getWidth() / 3;
-        freqSliders[i].setBounds(rowBounds.removeFromLeft(sliderWidth));
-        gainSliders[i].setBounds(rowBounds.removeFromLeft(sliderWidth));
-        qSliders[i].setBounds(rowBounds);
+        auto column = controlArea.removeFromLeft(columnWidth);
+        auto columnHeight = column.getHeight();
+        auto sliderHeight = columnHeight * 0.5f;
+        auto knobHeight = columnHeight * 0.25f;
+        auto gainRect = column.removeFromTop((int)sliderHeight);
+        gainSliders[i].setBounds(gainRect);
+        auto freqRect = column.removeFromTop((int)knobHeight);
+        freqSliders[i].setBounds(freqRect.withSizeKeepingCentre(60, 60));
+        auto qRect = column;
+        qSliders[i].setBounds(qRect.withSizeKeepingCentre(60, 60));
     }
-    updateHandlePositions();
 }
 
 //==============================================================================
