@@ -1,0 +1,42 @@
+# Compiled object files
+*.obj
+*.o
+*.lo
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.idb
+*.exp
+*.iobj
+*.ipch
+
+# Visual Studio specific files
+*.suo
+*.user
+*.filters
+*.VC.db
+.vs/
+x64/
+ipch/
+*.tlog
+*.lastbuildstate
+*.opendb
+
+# Logs and temporary files
+*.log
+*.cache
+*.tmp
+*.bak
+*.swp
+*.swo
+.DS_Store
+
+# Package manager folders
+node_modules/
+.vscode/
+.idea/
+
