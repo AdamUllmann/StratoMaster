@@ -11,7 +11,7 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     addAndMakeVisible(tabs);
     setResizable(true, true);
     setResizeLimits(600, 400, 2000, 1400);
-    setSize(800, 500);
+    setSize(1000, 500);
 }
 
 StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
