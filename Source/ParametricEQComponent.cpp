@@ -1,49 +1,72 @@
 ﻿#include "ParametricEQComponent.h"
 
+static const std::array<juce::Colour, 8> bandColours
+{
+    juce::Colour(0xFFBF00FF), // neon purple
+    juce::Colour(0xFFFF00BF), // neon pink
+    juce::Colour(0xFFFF3333), // neon red
+    juce::Colour(0xFFFF6600), // neon orange
+    juce::Colour(0xFFFFFF33), // neon yellow
+    juce::Colour(0xFF33FF33), // neon green
+    juce::Colour(0xFF33FFFF), // neon cyan
+    juce::Colour(0xFF3366FF)  // neon blue
+};
+
 //==============================================================================
 ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
     : audioProcessor(p)
 {
-    for (int i = 0; i < numBands; ++i)      // 8 sets of knobs for each band
+    for (int i = 0; i < numBands; ++i)
     {
         // --- frequency knobs ---
         freqSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         freqSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
         addAndMakeVisible(freqSliders[i]);
+        freqSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
+
         auto freqParamID = "Band" + juce::String(i + 1) + "Freq";
         bandAttachments[i].freqAttachment.reset(
             new juce::AudioProcessorValueTreeState::SliderAttachment(
                 audioProcessor.apvts, freqParamID, freqSliders[i]
             )
         );
+
         freqLabels[i].setText("F" + juce::String(i + 1), juce::dontSendNotification);
         freqLabels[i].attachToComponent(&freqSliders[i], false);
         freqLabels[i].setJustificationType(juce::Justification::centred);
         addAndMakeVisible(freqLabels[i]);
+
         // --- gain knobs ---
         gainSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         gainSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
         addAndMakeVisible(gainSliders[i]);
+        gainSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
+
         auto gainParamID = "Band" + juce::String(i + 1) + "Gain";
         bandAttachments[i].gainAttachment.reset(
             new juce::AudioProcessorValueTreeState::SliderAttachment(
                 audioProcessor.apvts, gainParamID, gainSliders[i]
             )
         );
+
         gainLabels[i].setText("G" + juce::String(i + 1), juce::dontSendNotification);
         gainLabels[i].attachToComponent(&gainSliders[i], false);
         gainLabels[i].setJustificationType(juce::Justification::centred);
         addAndMakeVisible(gainLabels[i]);
+
         // --- Q knobs ---
         qSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         qSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
         addAndMakeVisible(qSliders[i]);
+        qSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
+
         auto qParamID = "Band" + juce::String(i + 1) + "Q";
         bandAttachments[i].qAttachment.reset(
             new juce::AudioProcessorValueTreeState::SliderAttachment(
                 audioProcessor.apvts, qParamID, qSliders[i]
             )
         );
+
         qLabels[i].setText("Q" + juce::String(i + 1), juce::dontSendNotification);
         qLabels[i].attachToComponent(&qSliders[i], false);
         qLabels[i].setJustificationType(juce::Justification::centred);
@@ -52,11 +75,14 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
         bandHandles[i].bandIndex = i;
         bandHandles[i].centre = { 0.f, 0.f };
     }
+
     auto paramIDs = getAllParamIDs();
     for (auto& paramID : paramIDs)
         p.apvts.addParameterListener(paramID, this);
-    addMouseListener(this, true);               // reminds me of javascript, ew
+
+    addMouseListener(this, true);
     updateHandlePositions();
+
     startTimerHz(60);
 }
 
@@ -88,8 +114,8 @@ void ParametricEQComponent::timerCallback()
 void ParametricEQComponent::paint(juce::Graphics& g)
 {
     auto graphArea = getGraphBounds();
-    g.fillAll(juce::Colours::black.withAlpha(0.9f));     // fill entire background
-    g.setColour(juce::Colours::black.withAlpha(1.0f));
+    g.fillAll(juce::Colour(35, 35, 35));     // fill entire background
+    g.setColour(juce::Colour(25, 25, 25));
     g.fillRect(graphArea);
     drawSpectrum(g, graphArea);
     drawBackgroundGrid(g, graphArea);
@@ -325,7 +351,7 @@ void ParametricEQComponent::drawBackgroundGrid(juce::Graphics& g, juce::Rectangl
             (int)(bottomY - textHeight * 0.5f),
             textWidth, textHeight);
 
-        g.setColour(juce::Colours::grey.withAlpha(0.5f));
+        g.setColour(juce::Colours::white.withAlpha(0.9f));
         g.drawFittedText(labelText, textRect, juce::Justification::centred, 1);
     }
 
@@ -348,7 +374,7 @@ void ParametricEQComponent::drawBackgroundGrid(juce::Graphics& g, juce::Rectangl
             textHeight);
 
         juce::String labelText = juce::String((int)dB) + " dB";
-        g.setColour(juce::Colours::grey.withAlpha(0.5f));
+        g.setColour(juce::Colours::white.withAlpha(0.9f));
         g.drawFittedText(labelText, textRect, juce::Justification::centredRight, 1);
     }
 }
@@ -401,21 +427,31 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
             eqPath.lineTo(x, y);
         }
     }
-    g.setColour(juce::Colours::cyan);
+    g.setColour(juce::Colours::white);
     g.strokePath(eqPath, juce::PathStrokeType(2.0f));
 }
 
 void ParametricEQComponent::drawHandles(juce::Graphics& g)
 {
-    g.setColour(juce::Colours::yellow);
-    const float radius = 6.0f;
+    const float radius = 8.0f;
+    g.setFont(juce::Font(14.0f, juce::Font::bold));
     for (int i = 0; i < numBands; ++i)
     {
         auto c = bandHandles[i].centre;
-        g.fillEllipse(c.x - radius, c.y - radius, radius * 2.f, radius * 2.f);
         g.setColour(juce::Colours::black);
-        g.drawEllipse(c.x - radius, c.y - radius, radius * 2.f, radius * 2.f, 1.0f);
-        g.setColour(juce::Colours::yellow);
+        g.fillEllipse(c.x - radius, c.y - radius, radius * 2.f, radius * 2.f);
+        g.setColour(bandColours[i]);
+        g.drawEllipse(c.x - radius, c.y - radius, radius * 2.f, radius * 2.f, 2.0f);
+        g.setColour(juce::Colours::white);
+        juce::Rectangle<int> textBounds(
+            (int)(c.x - radius),
+            (int)(c.y - radius),
+            (int)(radius * 2),
+            (int)(radius * 2));
+        g.drawFittedText(juce::String(i + 1),
+            textBounds,
+            juce::Justification::centred,
+            1);
     }
 }
 
