@@ -3,14 +3,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "ParametricEQComponent.h"
-
-// Example stubs for other tabs
-class CompressorComponent : public juce::Component
-{
-public:
-    void paint(juce::Graphics& g) override { g.fillAll(juce::Colours::darkgrey); }
-    void resized() override {}
-};
+#include "CompressorComponent.h"
 
 class ImagerComponent : public juce::Component
 {
@@ -43,7 +36,7 @@ private:
 
     // placeholders
     ParametricEQComponent eqComponent{ audioProcessor };
-    CompressorComponent   compressorComp;
+    CompressorComponent   compressorComp { audioProcessor.apvts };
     ImagerComponent       imagerComp;
     MaximizerComponent    maximizerComp;
 

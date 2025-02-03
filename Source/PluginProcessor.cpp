@@ -23,6 +23,7 @@ StratomasterAudioProcessor::~StratomasterAudioProcessor()
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::createParameterLayout()
 {
+    // ========== EQ PARAMETERS ==========
     static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f,
                                                      1000.f, 2000.f, 5000.f, 10000.f };
 
@@ -70,6 +71,42 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         }
     }
 
+    // ========== COMPRESSOR PARAMETERS ==========
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "CompThreshold",
+        "Compressor Threshold",
+        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
+        -24.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "CompRatio",
+        "Compressor Ratio",
+        juce::NormalisableRange<float>(1.0f, 20.0f, 0.1f),
+        2.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "CompAttack",
+        "Compressor Attack",
+        juce::NormalisableRange<float>(1.0f, 200.0f, 1.0f),
+        20.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "CompRelease",
+        "Compressor Release",
+        juce::NormalisableRange<float>(10.0f, 1000.0f, 1.0f),
+        200.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "CompMakeup",
+        "Compressor Makeup",
+        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f),
+        0.0f
+    ));
+
     return { params.begin(), params.end() };
 }
 
@@ -103,6 +140,8 @@ void StratomasterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
     std::fill(fifoBuffer.begin(), fifoBuffer.end(), 0.0f);
     fifoIndex = 0;
     fftDataReady.store(false);
+
+    compressor.prepare(spec);
 }
 
 void StratomasterAudioProcessor::releaseResources()
@@ -189,7 +228,7 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
                 mag *= hannComp; // apply hann compensation
                 float binFreq = (bin * (float)getSampleRate()) / (float)fftSize;
                 if (binFreq > 0.0f)
-                    mag *= std::sqrt(binFreq / 20.0f); // dividing by 20.0f so the low bins (20 Hz) aren’t overly boosted. 
+                    mag *= std::sqrt(binFreq / 20.0f); // dividing by 20.0f so the low bins (20 Hz) arenâ€™t overly boosted. 
                 // add +24 dB in magnitude
                 float magDb = juce::Decibels::gainToDecibels(mag, -100.0f) + offsetdB;
                 mag = juce::Decibels::decibelsToGain(magDb);
@@ -200,6 +239,28 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         else
         {
             fifoIndex.store(index);
+        }
+
+        auto threshold = apvts.getRawParameterValue("CompThreshold")->load();
+        auto ratio = apvts.getRawParameterValue("CompRatio")->load();
+        auto attackMs = apvts.getRawParameterValue("CompAttack")->load();
+        auto releaseMs = apvts.getRawParameterValue("CompRelease")->load();
+        auto makeupDb = apvts.getRawParameterValue("CompMakeup")->load();
+
+        compressor.setThreshold(threshold); // dB
+        compressor.setRatio(ratio);
+        compressor.setAttack(attackMs);   // ms
+        compressor.setRelease(releaseMs); // ms
+
+        // Process the compressor
+        compressor.process(context);
+
+        // Then apply makeup gain if you like, or do it within the compressor:
+        // For a dsp::Compressor, you can do setPostGain() or simply add a gain stage:
+        if (std::abs(makeupDb) > 0.01f)
+        {
+            float linearGain = juce::Decibels::decibelsToGain(makeupDb);
+            buffer.applyGain(linearGain);
         }
     }
 

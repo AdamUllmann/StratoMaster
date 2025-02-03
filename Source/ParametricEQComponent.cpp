@@ -1,4 +1,4 @@
-﻿#include "ParametricEQComponent.h"
+#include "ParametricEQComponent.h"
 
 static const std::array<juce::Colour, 8> bandColours
 {
