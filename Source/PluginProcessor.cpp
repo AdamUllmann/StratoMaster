@@ -204,6 +204,25 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         return;
     }
 
+    float threshold = apvts.getRawParameterValue("CompThreshold")->load();
+    float ratio = apvts.getRawParameterValue("CompRatio")->load();
+    float attackMs = apvts.getRawParameterValue("CompAttack")->load();
+    float releaseMs = apvts.getRawParameterValue("CompRelease")->load();
+    float makeupDb = apvts.getRawParameterValue("CompMakeup")->load();
+
+    compressor.setThreshold(threshold); // dB
+    compressor.setRatio(ratio);
+    compressor.setAttack(attackMs);   // ms
+    compressor.setRelease(releaseMs); // ms
+
+    compressor.process(context);
+
+    if (std::abs(makeupDb) > 0.01f)
+    {
+        float linearGain = juce::Decibels::decibelsToGain(makeupDb);
+        buffer.applyGain(linearGain);
+    }
+
     auto* readPointer = buffer.getReadPointer(0);
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
@@ -239,28 +258,6 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         else
         {
             fifoIndex.store(index);
-        }
-
-        auto threshold = apvts.getRawParameterValue("CompThreshold")->load();
-        auto ratio = apvts.getRawParameterValue("CompRatio")->load();
-        auto attackMs = apvts.getRawParameterValue("CompAttack")->load();
-        auto releaseMs = apvts.getRawParameterValue("CompRelease")->load();
-        auto makeupDb = apvts.getRawParameterValue("CompMakeup")->load();
-
-        compressor.setThreshold(threshold); // dB
-        compressor.setRatio(ratio);
-        compressor.setAttack(attackMs);   // ms
-        compressor.setRelease(releaseMs); // ms
-
-        // Process the compressor
-        compressor.process(context);
-
-        // Then apply makeup gain if you like, or do it within the compressor:
-        // For a dsp::Compressor, you can do setPostGain() or simply add a gain stage:
-        if (std::abs(makeupDb) > 0.01f)
-        {
-            float linearGain = juce::Decibels::decibelsToGain(makeupDb);
-            buffer.applyGain(linearGain);
         }
     }
 
