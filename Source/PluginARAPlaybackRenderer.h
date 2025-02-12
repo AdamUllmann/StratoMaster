@@ -1,20 +1,8 @@
-/*
-  ==============================================================================
-
-    This file was auto-generated!
-
-    It contains the basic framework code for an ARA playback renderer implementation.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
 //==============================================================================
-/**
-*/
 class StratomasterPlaybackRenderer  : public juce::ARAPlaybackRenderer
 {
 public:

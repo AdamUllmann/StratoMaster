@@ -24,8 +24,7 @@ StratomasterAudioProcessor::~StratomasterAudioProcessor()
 juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::createParameterLayout()
 {
     // ========== EQ PARAMETERS ==========
-    static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f,
-                                                     1000.f, 2000.f, 5000.f, 10000.f };
+    static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f, 1000.f, 2000.f, 5000.f, 10000.f };
 
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
     params.reserve(8 * 3); // 8 bands * (freq, gain, Q)
@@ -33,7 +32,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
     for (int i = 0; i < 8; ++i)
     {
         auto bandIndexStr = juce::String(i + 1);
-
         // frequency
         {
             juce::String paramID = "Band" + bandIndexStr + "Freq";
@@ -45,7 +43,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
                 defaultFreqs[i]
             ));
         }
-
         // gain (db)
         {
             juce::String paramID = "Band" + bandIndexStr + "Gain";
@@ -57,7 +54,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
                 0.0f
             ));
         }
-
         // Q
         {
             juce::String paramID = "Band" + bandIndexStr + "Q";

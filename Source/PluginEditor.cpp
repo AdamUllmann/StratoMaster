@@ -1,7 +1,6 @@
 #include "PluginEditor.h"
 
-StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterAudioProcessor& p)
-    : AudioProcessorEditor(&p), audioProcessor(p)
+StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterAudioProcessor& p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
     tabs.addTab("EQ", juce::Colours::lightgrey, &eqComponent, false);
     tabs.addTab("Compressor", juce::Colours::grey, &compressorComp, false);
