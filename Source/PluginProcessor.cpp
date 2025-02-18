@@ -114,7 +114,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "MaxCeiling",
         "Maximizer Ceiling",
-        juce::NormalisableRange<float>(-1.0f, 0.0f, 0.1f),
+        juce::NormalisableRange<float>(-20.0f, 0.0f, 0.1f),
         -0.1f
     ));
 
