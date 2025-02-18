@@ -7,6 +7,10 @@
               pluginARAAnalyzableContent="1,16,2,32,4,64,8">
   <MAINGROUP id="FNy3bX" name="Stratomaster">
     <GROUP id="{2AB68CD6-4866-7004-020B-321038C98D4D}" name="Source">
+      <FILE id="yUIk8R" name="MaximizerComponent.h" compile="0" resource="0"
+            file="Source/MaximizerComponent.h"/>
+      <FILE id="bbGZlD" name="MaximizerComponent.cpp" compile="1" resource="0"
+            file="Source/MaximizerComponent.cpp"/>
       <FILE id="n8BFLn" name="CompressorComponent.h" compile="0" resource="0"
             file="Source/CompressorComponent.h"/>
       <FILE id="aPnLpL" name="CompressorComponent.cpp" compile="1" resource="0"

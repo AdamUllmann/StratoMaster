@@ -103,6 +103,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         0.0f
     ));
 
+    // ========== MAXIMIZER PARAMETERS ==========
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MaxThreshold",
+        "Maximizer Threshold",
+        juce::NormalisableRange<float>(-20.0f, 0.0f, 0.1f),
+        -1.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MaxCeiling",
+        "Maximizer Ceiling",
+        juce::NormalisableRange<float>(-1.0f, 0.0f, 0.1f),
+        -0.1f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MaxRelease",
+        "Maximizer Release",
+        juce::NormalisableRange<float>(1.0f, 250.0f, 1.0f),
+        50.0f // ms
+    ));
+
     return { params.begin(), params.end() };
 }
 
@@ -138,6 +160,7 @@ void StratomasterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
     fftDataReady.store(false);
 
     compressor.prepare(spec);
+    limiter.prepare(spec);
 }
 
 void StratomasterAudioProcessor::releaseResources()
@@ -217,6 +240,27 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     {
         float linearGain = juce::Decibels::decibelsToGain(makeupDb);
         buffer.applyGain(linearGain);
+    }
+
+    auto maxThreshold = apvts.getRawParameterValue("MaxThreshold")->load();
+    auto maxCeiling = apvts.getRawParameterValue("MaxCeiling")->load();
+    auto maxReleaseMs = apvts.getRawParameterValue("MaxRelease")->load();
+
+    limiter.setThreshold(maxThreshold);
+    limiter.setRatio(100.0f);
+    limiter.setAttack(1.0f);
+    limiter.setRelease(maxReleaseMs);
+    limiter.process(context);
+
+    float linearCeiling = juce::Decibels::decibelsToGain(maxCeiling);
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* bufData = buffer.getWritePointer(ch);
+        for (int s = 0; s < buffer.getNumSamples(); ++s)
+        {
+            if (bufData[s] > linearCeiling) bufData[s] = linearCeiling;
+            if (bufData[s] < -linearCeiling) bufData[s] = -linearCeiling;
+        }
     }
 
     auto* readPointer = buffer.getReadPointer(0);

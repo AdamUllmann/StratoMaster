@@ -69,6 +69,7 @@ private:
     std::atomic<bool> fftDataReady{ false };
 
     juce::dsp::Compressor<float> compressor;
+    juce::dsp::Compressor<float> limiter;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
