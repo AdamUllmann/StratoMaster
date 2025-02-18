@@ -32,7 +32,7 @@ private:
     ParametricEQComponent eqComponent{ audioProcessor };
     CompressorComponent   compressorComp { audioProcessor.apvts };
     ImagerComponent       imagerComp;
-    MaximizerComponent   maximizerComp { audioProcessor.apvts };
+    MaximizerComponent    maximizerComp{ audioProcessor, audioProcessor.apvts };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessorEditor)
 };

@@ -263,6 +263,17 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         }
     }
 
+    float maxAmp = 0.0f;
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* readPtr = buffer.getReadPointer(ch);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            maxAmp = std::max(maxAmp, std::fabs(readPtr[i]));
+    }
+
+    float newPeakDb = (maxAmp > 0.000001f) ? juce::Decibels::gainToDecibels(maxAmp) : -100.0f;
+    currentMaximizerPeak = newPeakDb;
+
     auto* readPointer = buffer.getReadPointer(0);
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {

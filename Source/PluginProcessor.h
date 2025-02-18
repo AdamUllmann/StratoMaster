@@ -52,6 +52,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
+    float getMaximizerPeak() const { return currentMaximizerPeak; }
+
 private:
     //ugly declaration of filters for eq
     std::array<juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>, 8> peakFilters;
@@ -70,6 +72,8 @@ private:
 
     juce::dsp::Compressor<float> compressor;
     juce::dsp::Compressor<float> limiter;
+
+    float currentMaximizerPeak = -100.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };

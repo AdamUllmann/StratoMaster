@@ -21,14 +21,16 @@ struct MaximizerAttachments
 };
 
 //==============================================================================
-class MaximizerComponent : public juce::Component
+class MaximizerComponent : public juce::Component, private juce::Timer
 {
 public:
-    MaximizerComponent(juce::AudioProcessorValueTreeState& apvts);
+    MaximizerComponent(StratomasterAudioProcessor& proc, juce::AudioProcessorValueTreeState& apvts);
     ~MaximizerComponent() override;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
+
+    void timerCallback() override;
 
 private:
     juce::Slider thresholdSlider;
@@ -40,8 +42,11 @@ private:
     juce::Label ceilingLabel;
     juce::Label releaseLabel;
 
+    juce::Rectangle<int> meterRect;
+
     MaximizerAttachments attachments;
     juce::AudioProcessorValueTreeState& apvtsRef;
+    StratomasterAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MaximizerComponent)
 };

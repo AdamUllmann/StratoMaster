@@ -17,9 +17,17 @@ namespace
     const auto releaseColour = juce::Colours::cyan;
 }
 
+static constexpr float greenStartDb = -60.0f;
+static constexpr float yellowStartDb = -12.0f;
+static constexpr float redStartDb = -3.0f;
+static constexpr float topDb = 0.0f;
+
+
 //==============================================================================
-MaximizerComponent::MaximizerComponent(juce::AudioProcessorValueTreeState& apvts)
-    : apvtsRef(apvts)
+MaximizerComponent::MaximizerComponent(StratomasterAudioProcessor& proc,
+    juce::AudioProcessorValueTreeState& apvts)
+    : audioProcessor(proc),
+    apvtsRef(apvts)
 {
     // Threshold
     thresholdSlider.setSliderStyle(juce::Slider::LinearVertical);
@@ -59,32 +67,107 @@ MaximizerComponent::MaximizerComponent(juce::AudioProcessorValueTreeState& apvts
     releaseLabel.setText("Release", juce::dontSendNotification);
     releaseLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(releaseLabel);
+
+    startTimerHz(60);
 }
 
 MaximizerComponent::~MaximizerComponent()
 {
 }
 
+auto dBToFraction = [](float dBVal)
+    {
+        float fraction = (dBVal - greenStartDb) / (topDb - greenStartDb);
+        return juce::jlimit(0.0f, 1.0f, fraction);
+    };
+
 void MaximizerComponent::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour(35, 35, 35));
+
+    // background for the meter
+    g.setColour(juce::Colours::darkgrey.darker());
+    g.fillRect(meterRect);
+    float peakDb = audioProcessor.getMaximizerPeak();
+    float peakFill = dBToFraction(peakDb);
+    float yStartFrac = dBToFraction(yellowStartDb);
+    float rStartFrac = dBToFraction(redStartDb);
+    int meterHeight = meterRect.getHeight();
+    int meterBottom = meterRect.getBottom();
+
+    // ============== GREEN FILL ==============
+    float greenTopFrac = std::min(peakFill, yStartFrac);
+    int greenPixels = (int)(meterHeight * greenTopFrac);
+    int greenY = meterBottom - greenPixels;
+    g.setColour(juce::Colours::limegreen);
+    g.fillRect(meterRect.getX(), greenY, meterRect.getWidth(), greenPixels);
+
+    // ============== YELLOW FILL ==============
+    if (peakFill > yStartFrac)
+    {
+        float yLowFrac = yStartFrac;
+        float yHighFrac = std::min(peakFill, rStartFrac);
+        int yLowPix = (int)(meterHeight * yLowFrac);
+        int yHighPix = (int)(meterHeight * yHighFrac);
+        int fillHeight = yHighPix - yLowPix;
+        int fillY = meterBottom - yHighPix;
+        g.setColour(juce::Colours::yellow);
+        g.fillRect(meterRect.getX(), fillY, meterRect.getWidth(), fillHeight);
+    }
+
+    // ============== RED FILL ===============
+    if (peakFill > rStartFrac)
+    {
+        float rLowFrac = rStartFrac;
+        float rHighFrac = peakFill;
+        int rLowPix = (int)(meterHeight * rLowFrac);
+        int rHighPix = (int)(meterHeight * rHighFrac);
+        int fillHeight = rHighPix - rLowPix;
+        int fillY = meterBottom - rHighPix;
+
+        g.setColour(juce::Colours::red);
+        g.fillRect(meterRect.getX(), fillY, meterRect.getWidth(), fillHeight);
+    }
+    for (float dBtick = 0.0f; dBtick >= -60.0f; dBtick -= 6.0f)
+    {
+        float frac = dBToFraction(dBtick);
+        int yPix = meterBottom - (int)(meterHeight * frac);
+        g.setColour(juce::Colours::grey);
+        g.drawLine((float)meterRect.getX(),
+            (float)yPix,
+            (float)(meterRect.getRight()),
+            (float)yPix,
+            1.0f);
+        juce::String labelText = juce::String((int)dBtick) + " dB";
+        g.setColour(juce::Colours::white);
+        g.drawFittedText(labelText,
+            meterRect.getX() - 35,
+            yPix - 7,
+            30, 14,
+            juce::Justification::centredRight,
+            1);
+    }
 }
 
 void MaximizerComponent::resized()
 {
     auto area = getLocalBounds().reduced(10);
-    auto leftWidth = (int)(area.getWidth() * 0.6f);
-    auto leftArea = area.removeFromLeft(leftWidth);
-    auto halfWidth = leftArea.getWidth() / 2;
-    auto thresholdArea = leftArea.removeFromLeft(halfWidth);
-    auto labelHeight = 20;
-    thresholdLabel.setBounds(thresholdArea.removeFromTop(labelHeight));
+    int meterWidth = 50;
+    float sliderWidth = 0.3f;
+    auto thresholdArea = area.removeFromLeft((int)(area.getWidth() * 0.2f));
+    thresholdLabel.setBounds(thresholdArea.removeFromTop(20));
     thresholdSlider.setBounds(thresholdArea);
-    auto ceilingArea = leftArea;
-    ceilingLabel.setBounds(ceilingArea.removeFromTop(labelHeight));
+    auto meterArea = area.removeFromLeft(meterWidth);
+    meterRect = meterArea;
+    auto ceilingArea = area.removeFromLeft((int)(area.getWidth() * 0.25f));
+    ceilingLabel.setBounds(ceilingArea.removeFromTop(20));
     ceilingSlider.setBounds(ceilingArea);
     auto releaseArea = area;
     releaseLabel.setBounds(releaseArea.removeFromTop(20));
-    releaseSlider.setBounds(releaseArea.withSizeKeepingCentre(200, 200));
+    releaseSlider.setBounds(releaseArea.withSizeKeepingCentre(250, 250));
 }
 
+void MaximizerComponent::timerCallback()
+{
+    repaint();
+}
