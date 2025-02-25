@@ -1,93 +1,75 @@
-Proposed Features which have been postponed to a later subrelease:
-- full AAX Companion API integration
-- support for Audio Unit out-of-process operation (currently enforced by Logic when running on Apple Silicon)
-- Audio Unit version 3 support (App Extension)
-- waveform envelope overview (previous draft had been temporarily removed until after ARA 2.0 release)
-- integration of plug-in undo history integration into the host
-- support for dynamic tuning such as Hermode (previous draft temporarily removed until after ARA 2.0 release)
-- support for automatic adaption of tuning and harmonic context (previous draft temporarily removed until after ARA 2.0 release)
+# ======================
+# ARA API CMake Integration
+#
+# Copyright (c) 2020-2022, Celemony Software GmbH, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ======================
 
+cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
 
-=== ARA SDK 2.2 release (aka 2.2.001) (2022/11/07) ===
-- added surround support for audio sources
-- added API to determine whether an audio modification actually modifies the underlying audio source
+include("${CMAKE_CURRENT_SOURCE_DIR}/ARA_API_Helpers.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/ARA_Version.cmake")
 
+project(ARA_API
+    DESCRIPTION "ARA Audio Random Access: API specification"
+    #only added in CMake 3.12:
+    #HOMEPAGE_URL https://www.celemony.com/ara
+    VERSION ${ARA_MAJOR_VERSION}.${ARA_MINOR_VERSION}.${ARA_PATCH_VERSION}.${ARA_BUILD_VERSION}
+    LANGUAGES C CXX
+)
 
-=== ARA SDK 2.1 release (aka 2.1.001) (2022/01/06) ===
-- finalized ARM support for Apple Silicon
-- enable ARA audio file chunk authoring directly in the host
+option(ARA_ENABLE_DEPRECATION_WARNINGS "Enable warnings when using deprecated ARA APIs" OFF)
 
+# ======================
 
-=== ARA SDK 2.0 release (aka 2.0.001) (2021/05/03) ===
-- outdated documentation for ARAFactory::factoryID fixed, related chapter "Managing ARA Archives" rewritten
-- clarified undo stack handling if host edits trigger follow-up updates in the plug-in
-- clarified threading constraints for creating/destroying ARA plug-in instances
-- clarified intended use cases and optimization criteria for ARA audio file chunks
-- clarified possible line feeds in base64 encoding of ARA audio file chunk archive data
-- added dedicated section about "Preview Rendering" to "Configuring The Rendering" in chapter "Implementing ARA"
-- various minor documentation cleanups/improvements
+set(ARA_API_Files
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARAInterface.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARAAudioFileChunks.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARAVST3.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARA_API.pdf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARA_API_Helpers.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ARA_Version.cmake"
+)
+if(APPLE)
+    list(INSERT ARA_API_Files 2
+        "${CMAKE_CURRENT_SOURCE_DIR}/ARAAudioUnit.h"
+    )
+endif()
 
-ARA SDK 2.0 draft 14 (aka 1.9.14) (2021/02/26)
-- applied Apache License 2.0
-- processing algorithm selection draft finalized for release
-- added API for license management if using ARA plug-ins without UI as analysis or time-stretch engine
-- clarified how to support multiple ARA audio processors in a single VST3 binary (e.g. WaveShell)
-- clarified life time of ARAFactory pointers obtained through ARA::IPlugInEntryPoint or ARA::IMainFactory
-- drafted ARM support (still experimental and bound to change in incompatible ways!)
-- removed now-obsolete transitional switch ARA_HEADER_LIKE_V1
-- clarifications for handling multiple VST3 components within the same binary
-- pdf documentation overhauled, many improvements and clarifications
-- added initial CMake support, still work-in-progress
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.19)
+    add_library(ARA_API INTERFACE ${ARA_API_Files})
+else()
+    # older CMake interface targets cannot have non-interface sources or properties,
+    # so we need to use an empty object target instead
+    add_library(ARA_API OBJECT ${ARA_API_Files})
+    set_target_properties(ARA_API PROPERTIES
+        LINKER_LANGUAGE NONE
+    )
+endif()
 
-ARA SDK 2.0 draft 13 (aka 1.9.13) (2020/08/12)
-- Audio Units: adding AudioComponent tag to quickly identify ARA plug-ins when using the system-wide Audio Unit caching
-- VST3: defined call order between bindToDocumentControllerWithRoles () and getProcessContextRequirements () (added in VST 3.7.0)
-- various small improvements and clarifications in pdf documentation, document structure improved
+target_compile_features(ARA_API
+    INTERFACE
+        c_std_99
+        cxx_std_11
+)
 
-ARA SDK 2.0 draft 12 (aka 1.9.12) (2020/06/12)
-- re-introduced updated version of processing algorithm selection draft
-- replaced remaining draft markups with final markup (tuning & harmonics content, audio file chunks)
-- renamed kARAContentUpdatePitchScopeRemainsUnchanged to kARAContentUpdateTuningScopeRemainsUnchanged for consistency
-- clarified length 0 in playback or modification time is valid for playback regions
-- now using more modern C++ in core headers, dropped C++98 support in favor of C++11
+ara_private_configure_ARA_API_interface_settings(ARA_API INTERFACE)
 
-ARA SDK 2.0 draft 11 (aka 1.9.11) (2020/04/02)
-- relaxed restrictions for UI notifications to allow for more concise UI update handling
-- clarified not to notify content changes when restoring data
-- clarified not to notify content changes in response to receiving content changes
-- clarified time based vs. object based host selection
+set_target_properties(ARA_API PROPERTIES
+    XCODE_GENERATE_SCHEME OFF
+)
 
-ARA SDK 2.0 draft 10 (aka 1.9.10) (2020/03/13)
-- clarifying persistency of deactivation state for audio sources and audio modifications
-- hosts are no longer required to close any UI before dactivating audio modifications
-- pdf documentation revamped to be more compact
-
-ARA SDK 2.0 draft 9 (aka 1.9.9) (2019/12/06)
-- initial draft of ARA-specific audio file chunk format for embedding audio source state (analysis data)
-  this also enables drag&drop between hosts and plug-ins
-- revised persistent ID mapping for partial persistency
-  CAREFUL: previous draft is no longer compatible and will cause crashes!
-- added required new call getDocumentArchiveID () to ARAArchivingControllerInterface
-- revised documentation for partial persistency
-- initial draft to read waveform envelope data for efficient display of output audio signal
-- clarified threading constraints for audio readers: single-threaded per reader,
-  but multiple readers can be used concurrently
-
-ARA SDK 2.0 draft 8 (aka 1.9.8) (2019/06/28)
-- relaxed rules about content reading functions only being callable while document is not in
-  editing state: no state changes may be triggered while making the calls, but they are now
-  valid to make between begin- and endEditing()
-- clarified usage of name field in ARAContentTuning, ARAContentKeySignature and ARAContentChord
-- introduced proper ARAAPIGeneration typedef instead of using plain ARAInt32
-- merged Doxygen-based ARA_API_Reference.pdf into ARA_SDK.pdf
-- clarifications and fixes in pdf documentation
-
-ARA SDK 2.0 draft 7 (aka 1.9.7) (2019/03/04)
-- minor tweaks to analysis algorithm properties draft
-- removed draft for content tags from ARA 2 due to very limited interest in supporting it
-  (content tags may re-appear in some later release if more broadly requested)
-- clarified potential data alignment issues for ARA structs
-
-ARA SDK 2.0 draft 6 (aka 1.9.6) (2018/9/19)
-This is the public release of kARAAPIGeneration_2_0_Draft.
-For changes compared earlier versions, see Version.txt in that release of the SDK.
+ara_group_target_files(ARA_API)

@@ -125,6 +125,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         50.0f // ms
     ));
 
+
+    // ========== IMAGER PARAMETERS ==========
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "ImagerWidth",
+        "Imager Width",
+        juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),
+        1.0f // default -> normal stereo
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "ImagerStereoize",
+        "Imager Stereoize",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.0f // default -> off
+    ));
+
     return { params.begin(), params.end() };
 }
 
@@ -273,6 +289,36 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
 
     float newPeakDb = (maxAmp > 0.000001f) ? juce::Decibels::gainToDecibels(maxAmp) : -100.0f;
     currentMaximizerPeak = newPeakDb;
+
+    // ============= Imager DSP =============
+    float width = apvts.getRawParameterValue("ImagerWidth")->load();
+    if (buffer.getNumChannels() < 2) {
+        return;
+    }
+    auto* left = buffer.getWritePointer(0);
+    auto* right = buffer.getWritePointer(1);
+    int numSamples = buffer.getNumSamples();
+    for (int i = 0; i < numSamples; ++i) // mid = (L+R)*0.5, side = (L-R)*0.5
+    {
+        float L = left[i];
+        float R = right[i];
+        float mid = 0.5f * (L + R);
+        float side = 0.5f * (L - R);
+
+        side *= width;
+        left[i] = mid + side;
+        right[i] = mid - side;
+    }
+
+    for (int i = 0; i < buffer.getNumSamples(); i++)
+    {
+        int index = scopeIndex.load();
+        scopeBuffer[index * 2 + 0] = left[i];
+        scopeBuffer[index * 2 + 1] = right[i];
+
+        index = (index + 1) % scopeSize;
+        scopeIndex.store(index);
+    }
 
     auto* readPointer = buffer.getReadPointer(0);
     for (int i = 0; i < buffer.getNumSamples(); ++i)

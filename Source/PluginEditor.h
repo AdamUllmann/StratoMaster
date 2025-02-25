@@ -5,13 +5,7 @@
 #include "ParametricEQComponent.h"
 #include "CompressorComponent.h"
 #include "MaximizerComponent.h"
-
-class ImagerComponent : public juce::Component
-{
-public:
-    void paint(juce::Graphics& g) override { g.fillAll(juce::Colours::darkblue); }
-    void resized() override {}
-};
+#include "ImagerComponent.h"
 
 //==============================================================================
 class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor
@@ -28,10 +22,9 @@ private:
 
     juce::TabbedComponent tabs{ juce::TabbedButtonBar::TabsAtTop };
 
-    // placeholders
     ParametricEQComponent eqComponent{ audioProcessor };
     CompressorComponent   compressorComp { audioProcessor.apvts };
-    ImagerComponent       imagerComp;
+    ImagerComponent imagerComp{ audioProcessor, audioProcessor.apvts };
     MaximizerComponent    maximizerComp{ audioProcessor, audioProcessor.apvts };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessorEditor)

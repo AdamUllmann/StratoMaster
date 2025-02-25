@@ -54,6 +54,10 @@ public:
 
     float getMaximizerPeak() const { return currentMaximizerPeak; }
 
+    int getScopeSize() const { return scopeSize; }
+    int getScopeIndex() const { return scopeIndex.load(); }
+    const float* getScopeBuffer() const { return scopeBuffer.data(); }
+
 private:
     //ugly declaration of filters for eq
     std::array<juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>, 8> peakFilters;
@@ -74,6 +78,11 @@ private:
     juce::dsp::Compressor<float> limiter;
 
     float currentMaximizerPeak = -100.0f;
+
+    // ring buffer for L/R
+    static constexpr int scopeSize = 1024;
+    std::array<float, scopeSize * 2> scopeBuffer{};
+    std::atomic<int> scopeIndex{ 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
