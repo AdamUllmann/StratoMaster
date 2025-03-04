@@ -24,8 +24,8 @@ ImagerComponent::ImagerComponent(StratomasterAudioProcessor& proc, juce::AudioPr
     widthLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(widthLabel);
 
-    // Stereoize
-    stereoizeSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    // Stereoize (unimplemented)
+    /*stereoizeSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     stereoizeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 40, 20);
     addAndMakeVisible(stereoizeSlider);
 
@@ -33,7 +33,7 @@ ImagerComponent::ImagerComponent(StratomasterAudioProcessor& proc, juce::AudioPr
 
     stereoizeLabel.setText("Stereoize", juce::dontSendNotification);
     stereoizeLabel.setJustificationType(juce::Justification::centredLeft);
-    addAndMakeVisible(stereoizeLabel);
+    addAndMakeVisible(stereoizeLabel); */
     startTimerHz(60);
 }
 
@@ -45,15 +45,13 @@ ImagerComponent::~ImagerComponent()
 void ImagerComponent::resized()
 {
     auto area = getLocalBounds().reduced(10);
-    auto topHeight = 120;
-    auto topArea = area.removeFromTop(topHeight);
-    widthLabel.setBounds(topArea.removeFromTop(20));
-    widthSlider.setBounds(topArea.withSizeKeepingCentre(60, 60));
-    auto stereoHeight = 50;
-    auto stereoArea = area.removeFromTop(stereoHeight);
-    stereoizeLabel.setBounds(stereoArea.removeFromLeft(70));
-    stereoizeSlider.setBounds(stereoArea.reduced(5));
-    scopeArea = area;
+    auto leftArea = area.removeFromLeft(area.getWidth() / 2);
+    auto labelHeight = 20;
+    widthLabel.setBounds(leftArea.removeFromTop(labelHeight));
+    widthSlider.setBounds(leftArea.withSizeKeepingCentre(300, 300));
+    auto rightArea = area;
+    int side = juce::jmin(rightArea.getWidth(), rightArea.getHeight());
+    scopeArea = juce::Rectangle<int>(rightArea.getCentreX() - side / 2, rightArea.getCentreY() - side / 2, side, side);
 }
 
 void ImagerComponent::paint(juce::Graphics& g)
@@ -61,23 +59,28 @@ void ImagerComponent::paint(juce::Graphics& g)
     g.fillAll(juce::Colour(35, 35, 35));
     g.setColour(juce::Colours::grey);
     g.drawRect(scopeArea);
-    int scopeIndex = audioProcessor.getScopeIndex();
-    int scopeSize = audioProcessor.getScopeSize();
-    const float* bufferData = audioProcessor.getScopeBuffer();
-    auto cx = scopeArea.getCentreX();
-    auto cy = scopeArea.getCentreY();
-    auto radius = (float)juce::jmin(scopeArea.getWidth(), scopeArea.getHeight()) / 2 - 5;
+    const int cx = scopeArea.getCentreX();
+    const int cy = scopeArea.getCentreY();
+    g.drawLine((float)scopeArea.getX(), (float)cy, (float)scopeArea.getRight(), (float)cy, 1.0f);
+    g.drawLine((float)cx, (float)scopeArea.getY(), (float)cx, (float)scopeArea.getBottom(), 1.0f);
+    const int textOffset = 20;
+    g.drawFittedText("L", scopeArea.getX() + 4, cy - textOffset, 20, 20, juce::Justification::left, 1);
+    g.drawFittedText("R", scopeArea.getRight() - 25, cy - textOffset, 20, 20, juce::Justification::right, 1);
+    g.drawFittedText("+1", cx, scopeArea.getY() + 2, 20, 20, juce::Justification::centred, 1);
+    g.drawFittedText("-1", cx, scopeArea.getBottom() - 20, 20, 20, juce::Justification::centred, 1);
     g.setColour(juce::Colours::cyan.withAlpha(0.8f));
-    for (int i = 0; i < scopeSize; ++i)
-    {
-        int index = (scopeIndex + i) % scopeSize;
-        float L = bufferData[index * 2 + 0];
-        float R = bufferData[index * 2 + 1];
-        float X = (L + R) * 0.7071f;  // x = L, y = R for a standard lissajous
-        float Y = (L - R) * 0.7071f;
-        float drawX = cx + X * radius;
-        float drawY = cy - Y * radius;  // subtract Y to invert vertical
-
-        g.fillEllipse(drawX - 1, drawY - 1, 2.0f, 2.0f);
+    const int scopeIndex = audioProcessor.getScopeIndex();
+    const int scopeSize = audioProcessor.getScopeSize();
+    const float* bufferData = audioProcessor.getScopeBuffer();
+    float radius = (float)juce::jmin(scopeArea.getWidth(), scopeArea.getHeight()) / 2 - 5;
+    for (int i = 0; i < scopeSize; ++i) {
+        int idx = (scopeIndex + i) % scopeSize;
+        float L = bufferData[idx * 2 + 0];
+        float R = bufferData[idx * 2 + 1];
+        float X = (L - R) * 0.7071f; // square root of 2
+        float Y = (L + R) * 0.7071f;
+        float drawX = cx - X * radius;
+        float drawY = cy - Y * radius;
+        g.fillEllipse(drawX - 1, drawY - 1, 2, 2);
     }
 }

@@ -72,14 +72,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         "CompThreshold",
         "Compressor Threshold",
         juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
-        -24.0f
+        0.0f
     ));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "CompRatio",
         "Compressor Ratio",
         juce::NormalisableRange<float>(1.0f, 20.0f, 0.1f),
-        2.0f
+        1.0f
     ));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -99,7 +99,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "CompMakeup",
         "Compressor Makeup",
-        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f),
+        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
         0.0f
     ));
 
@@ -108,14 +108,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         "MaxThreshold",
         "Maximizer Threshold",
         juce::NormalisableRange<float>(-20.0f, 0.0f, 0.1f),
-        -1.0f
+        0.0f
     ));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "MaxCeiling",
         "Maximizer Ceiling",
         juce::NormalisableRange<float>(-20.0f, 0.0f, 0.1f),
-        -0.1f
+        0.0f
     ));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -130,11 +130,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "ImagerWidth",
         "Imager Width",
-        juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),
+        juce::NormalisableRange<float>(0.0f, 4.0f, 0.01f),
         1.0f // default -> normal stereo
     ));
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(   // unimplemented
         "ImagerStereoize",
         "Imager Stereoize",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
@@ -291,6 +291,7 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     currentMaximizerPeak = newPeakDb;
 
     // ============= Imager DSP =============
+
     float width = apvts.getRawParameterValue("ImagerWidth")->load();
     if (buffer.getNumChannels() < 2) {
         return;

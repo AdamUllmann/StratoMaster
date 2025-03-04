@@ -16,7 +16,7 @@
 struct ImagerAttachments
 {
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stereoizeAttachment;
+    //std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stereoizeAttachment;
 };
 
 //==============================================================================
@@ -34,9 +34,9 @@ private:
     StratomasterAudioProcessor& audioProcessor;
     juce::AudioProcessorValueTreeState& apvtsRef;
     juce::Slider widthSlider;
-    juce::Slider stereoizeSlider;
+    //juce::Slider stereoizeSlider;
     juce::Label widthLabel;
-    juce::Label stereoizeLabel;
+    //juce::Label stereoizeLabel;
 
     ImagerAttachments attachments;
 
