@@ -15,9 +15,39 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     stratomasterLogo.setColour(juce::Label::textColourId, juce::Colours::whitesmoke);
     addAndMakeVisible(stratomasterLogo);
 
+    audioProcessor.addChangeListener(this);
+
+    autoEQButton.setClickingTogglesState(true);
+    autoEQButton.setButtonText("Auto EQ");
+    autoEQButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey.brighter());
+    autoEQButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    autoEQButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::darkred.withAlpha(0.8f));
+    autoEQButton.onClick = [this]() {
+        bool isOn = autoEQButton.getToggleState();
+        if (isOn) {
+            autoEQButton.setButtonText("Stop");
+            audioProcessor.startAutoEQ();
+        }
+        else {
+            autoEQButton.setButtonText("Auto EQ");
+            audioProcessor.stopAutoEQ();
+        }
+    };
+    addAndMakeVisible(autoEQButton);
+
     setResizable(true, true);
     setResizeLimits(600, 400, 2000, 1400);
     setSize(1000, 500);
+}
+
+void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if (source == &audioProcessor) {
+        if (!audioProcessor.isAutoEQActive) {
+            autoEQButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+            autoEQButton.setButtonText("Auto EQ");
+        }
+    }
 }
 
 StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
@@ -31,12 +61,12 @@ void StratomasterAudioProcessorEditor::paint(juce::Graphics& g)
 
 void StratomasterAudioProcessorEditor::resized()
 {
-    tabs.setBounds(getLocalBounds());
-
-    int topBarHeight = 30;
-    int logoWidth = 150;
-    int logoHeight = 30;
-    int offsetFromTop = 0;
+    tabs.setBounds (getLocalBounds());
+    auto topBarHeight = 30;
+    auto topBar = getLocalBounds().removeFromTop (topBarHeight);
+    int logoWidth  = 150;
     int offsetFromRight = 10;
-    stratomasterLogo.setBounds( getWidth() - logoWidth - offsetFromRight, offsetFromTop, logoWidth, logoHeight);
+    stratomasterLogo.setBounds (topBar.getRight() - logoWidth - offsetFromRight, topBar.getY(), logoWidth, topBarHeight);
+    int buttonWidth = 120;
+    autoEQButton.setBounds (stratomasterLogo.getX() - (buttonWidth + 10), topBar.getY(), buttonWidth, topBarHeight);
 }

@@ -126,12 +126,9 @@ void ParametricEQComponent::paint(juce::Graphics& g)
 void ParametricEQComponent::drawSpectrum(juce::Graphics& g, juce::Rectangle<int> graphArea)
 {
     // we have displayMagnitudes[] of size e.g. 1024, representing freq bins from 0..
-    // we'll turn those into dB, then map freq->x, dB->y.
-
+    // we'll turn those into dB, then map freq->x, dB->y
     g.setColour(juce::Colours::darkgrey.withAlpha(0.6f));
-
-    if (displayMagnitudes.empty())
-        return;
+    if (displayMagnitudes.empty()) return;
 
     juce::Path spectrumPath;
     bool firstPoint = true;

@@ -206,6 +206,110 @@ bool StratomasterAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
 }
 #endif
 
+void StratomasterAudioProcessor::startAutoEQ() {
+    isAutoEQActive = true;
+    blocksCloseToTarget = 0;
+    static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f, 1000.f, 2000.f, 5000.f, 10000.f };
+    for (int i = 0; i < 8; ++i) {
+        {
+            juce::String freqID = "Band" + juce::String(i + 1) + "Freq";
+            auto* freqParam = apvts.getParameter(freqID);
+            if (freqParam != nullptr) {
+                freqParam->beginChangeGesture();
+                freqParam->setValueNotifyingHost(freqParam->getNormalisableRange().convertTo0to1(defaultFreqs[i]));
+                freqParam->endChangeGesture();
+            }
+        }
+        {
+            juce::String gainID = "Band" + juce::String(i + 1) + "Gain";
+            auto* gainParam = apvts.getParameter(gainID);
+            if (gainParam != nullptr) {
+                gainParam->beginChangeGesture();
+                gainParam->setValueNotifyingHost(gainParam->getNormalisableRange().convertTo0to1(0.0f));
+                gainParam->endChangeGesture();
+            }
+        }
+        {
+            juce::String qID = "Band" + juce::String(i + 1) + "Q";
+            auto* qParam = apvts.getParameter(qID);
+            if (qParam != nullptr) {
+                qParam->beginChangeGesture();
+                qParam->setValueNotifyingHost(qParam->getNormalisableRange().convertTo0to1(1.0f));
+                qParam->endChangeGesture();
+            }
+        }
+    }
+    sendChangeMessage();
+}
+
+void StratomasterAudioProcessor::stopAutoEQ() {
+    isAutoEQActive = false;
+    blocksCloseToTarget = 0; // reset
+    sendChangeMessage();
+}
+
+void StratomasterAudioProcessor::doAutoEQFromFFT() {
+    std::array<float, numBands> sumMag{};
+    std::array<int, numBands> count{};
+    int fftLen = (int)fftMagnitudes.size();
+    if (fftLen < 1) return;
+    double sr = getSampleRate();
+    if (sr <= 0.0) sr = 44100.0;
+    for (int k = 0; k < fftLen; ++k) {
+        float freq = (float)(k * (sr * 0.5 / fftLen));
+        float magLin = fftMagnitudes[k];
+        for (int b = 0; b < numBands; ++b) {
+            if (freq >= bandRanges[b].low && freq < bandRanges[b].high) {
+                sumMag[b] += magLin;
+                count[b] += 1;
+                break;
+            }
+        }
+    }
+    std::array<float, numBands> differences;
+    differences.fill(0.0f);
+    for (int b = 0; b < numBands; ++b) {
+        if (count[b] == 0) continue;
+        float meanMag = sumMag[b] / (float)count[b];
+        float bandDb = juce::Decibels::gainToDecibels(meanMag + 1e-9f);
+        float diff = bandTargetDb[b] - bandDb;
+        if (std::fabs(diff) < 1.5f) continue;
+        float stepScale = (std::fabs(diff) >= 6.0f) ? 0.001f : 0.0003f;
+        differences[b] = diff;
+        if (std::fabs(diff) < 1.5f) continue;
+        float step = stepScale * diff;
+        juce::String gainParamID = "Band" + juce::String(b + 1) + "Gain";
+        auto* param = apvts.getParameter(gainParamID);
+        if (param != nullptr) {
+            if (auto* paramFloat = dynamic_cast<juce::AudioParameterFloat*>(param)) {
+                float oldDbVal = paramFloat->get(); // actual dB
+                float newDbVal = juce::jlimit(-24.0f, 24.0f, oldDbVal + step);
+                paramFloat->beginChangeGesture();
+                paramFloat->setValueNotifyingHost(paramFloat->getNormalisableRange().convertTo0to1(newDbVal));
+                paramFloat->endChangeGesture();
+            }
+        }
+    }
+    bool allClose = true;
+    for (int b = 0; b < numBands; ++b) {
+        if (std::fabs(differences[b]) > 2.0f) {
+            allClose = false;
+            break;
+        }
+    }
+
+    if (allClose) {
+        blocksCloseToTarget++;
+        if (blocksCloseToTarget >= freezeThresholdBlocks) {
+            stopAutoEQ();
+            return;
+        }
+    }
+    else {
+        blocksCloseToTarget = 0;
+    }
+}
+
 void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -311,8 +415,7 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         right[i] = mid - side;
     }
 
-    for (int i = 0; i < buffer.getNumSamples(); i++)
-    {
+    for (int i = 0; i < buffer.getNumSamples(); i++) {
         int index = scopeIndex.load();
         scopeBuffer[index * 2 + 0] = left[i];
         scopeBuffer[index * 2 + 1] = right[i];
@@ -322,14 +425,11 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     }
 
     auto* readPointer = buffer.getReadPointer(0);
-    for (int i = 0; i < buffer.getNumSamples(); ++i)
-    {
+    for (int i = 0; i < buffer.getNumSamples(); ++i) {
         auto index = fifoIndex.load();
         fifoBuffer[index] = readPointer[i];
-
         index++;
-        if (index == fftSize)
-        {
+        if (index == fftSize) {
             std::copy(fifoBuffer.begin(), fifoBuffer.end(), fftData.begin());
             fifoIndex.store(0);
             windowFunc.multiplyWithWindowingTable(fftData.data(), fftSize);
@@ -337,8 +437,7 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
             fftMagnitudes.resize(fftSize / 2, 0.0f);
             float hannComp = 2.0f / (float)fftSize;
             float offsetdB = 24.0f;
-            for (int bin = 0; bin < fftSize / 2; ++bin)
-            {
+            for (int bin = 0; bin < fftSize / 2; ++bin) {
                 float realPart = fftData[bin * 2 + 0];
                 float imagPart = fftData[bin * 2 + 1];
                 float mag = std::sqrt(realPart * realPart + imagPart * imagPart);
@@ -352,6 +451,11 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
                 fftMagnitudes[bin] = mag;
             }
             fftDataReady.store(true);
+
+            // ========= AUTO EQ LOGIC =============
+            if (isAutoEQActive) {
+                doAutoEQFromFFT();
+            }
         }
         else
         {

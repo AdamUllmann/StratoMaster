@@ -8,7 +8,7 @@
 #include "ImagerComponent.h"
 
 //==============================================================================
-class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor
+class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::ChangeListener
 {
 public:
     StratomasterAudioProcessorEditor(StratomasterAudioProcessor&);
@@ -28,6 +28,9 @@ private:
     MaximizerComponent    maximizerComp{ audioProcessor, audioProcessor.apvts };
 
     juce::Label stratomasterLogo;
+
+    juce::TextButton autoEQButton { "Auto EQ" };
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessorEditor)
 };

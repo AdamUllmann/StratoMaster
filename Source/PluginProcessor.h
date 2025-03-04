@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-class StratomasterAudioProcessor : public juce::AudioProcessor
+class StratomasterAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 #if JucePlugin_Enable_ARA
     , public juce::AudioProcessorARAExtension
 #endif
@@ -58,6 +58,12 @@ public:
     int getScopeIndex() const { return scopeIndex.load(); }
     const float* getScopeBuffer() const { return scopeBuffer.data(); }
 
+    void startAutoEQ();
+    void stopAutoEQ();
+    void doAutoEQFromFFT();
+
+    bool isAutoEQActive = false;
+
 private:
     //ugly declaration of filters for eq
     std::array<juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>, 8> peakFilters;
@@ -83,6 +89,34 @@ private:
     static constexpr int scopeSize = 1024;
     std::array<float, scopeSize * 2> scopeBuffer{};
     std::atomic<int> scopeIndex{ 0 };
+
+    static constexpr int numBands = 8;
+    struct BandRange { float low; float high; };
+    std::array<BandRange, numBands> bandRanges
+    { {
+        {  20.0f,   75.0f }, // ~ 50 Hz
+        {  75.0f,  150.0f }, // ~ 100 Hz
+        { 150.0f,  350.0f }, // ~ 200 Hz
+        { 350.0f,  750.0f }, // ~ 500 Hz
+        { 750.0f, 1500.0f }, // ~ 1 kHz
+        {1500.0f, 3500.0f }, // ~ 2 kHz
+        {3500.0f, 7500.0f }, // ~ 5 kHz
+        {7500.0f,20000.0f }  // ~ 10 kHz
+    } };
+
+    std::array<float, numBands> bandTargetDb {
+        0.0f,  // ~ 50 Hz
+        0.0f,  // ~ 100 Hz
+        0.0f,  // ~ 200 Hz
+        0.0f,  // ~ 500 Hz
+        0.0f,  // ~ 1 kHz
+        0.0f,  // ~ 2 kHz
+        0.0f,  // ~ 5 kHz
+        0.0f   // ~ 10 kHz
+    };
+
+    int blocksCloseToTarget = 0;
+    static constexpr int freezeThresholdBlocks = 240;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
