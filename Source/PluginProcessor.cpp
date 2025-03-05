@@ -177,6 +177,12 @@ void StratomasterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
 
     compressor.prepare(spec);
     limiter.prepare(spec);
+
+    for (int b = 0; b < numBands; ++b)
+    {
+        diffHistory[b].resize(diffHistorySize, 0.0f);
+        diffIndex[b] = 0;
+    }
 }
 
 void StratomasterAudioProcessor::releaseResources()
@@ -261,28 +267,41 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
         for (int b = 0; b < numBands; ++b) {
             if (freq >= bandRanges[b].low && freq < bandRanges[b].high) {
                 sumMag[b] += magLin;
-                count[b] += 1;
+                count[b]++;
                 break;
             }
         }
     }
-    std::array<float, numBands> differences;
-    differences.fill(0.0f);
+    std::array<float, numBands> bandMag{};
     for (int b = 0; b < numBands; ++b) {
-        if (count[b] == 0) continue;
-        float meanMag = sumMag[b] / (float)count[b];
-        float bandDb = juce::Decibels::gainToDecibels(meanMag + 1e-9f);
-        float diff = bandTargetDb[b] - bandDb;
-        if (std::fabs(diff) < 1.5f) continue;
-        float stepScale = (std::fabs(diff) >= 6.0f) ? 0.001f : 0.0003f;
-        differences[b] = diff;
-        if (std::fabs(diff) < 1.5f) continue;
-        float step = stepScale * diff;
+        if (count[b] > 0) bandMag[b] = sumMag[b] / (float)count[b]; // linear average
+        else bandMag[b] = 0.0f;  // no bins => ignore
+    }
+    float sumAll = 0.0f;
+    int   used = 0;
+    for (int b = 0; b < numBands; ++b) {
+        if (bandMag[b] > 0.0f) {
+            sumAll += bandMag[b];
+            used++;
+        }
+    }
+    if (used < 1) return;
+    float globalMean = sumAll / (float)used;
+    for (int b = 0; b < numBands; ++b) {
+        if (bandMag[b] <= 0.0f) continue; // skip empty band
+        float diffLin = globalMean - bandMag[b];
+        float ratio = (globalMean + 1e-9f) / (bandMag[b] + 1e-9f);
+        float diffDb = juce::Decibels::gainToDecibels(ratio);
+        int idx = diffIndex[b];
+        diffHistory[b][idx] = diffDb;
+        diffIndex[b] = (idx + 1) % diffHistorySize;
+        if (std::fabs(diffDb) < 1.5f) continue;
+        float stepScale = (std::fabs(diffDb) >= 6.0f) ? 0.001f : 0.0003f;
+        float step = stepScale * diffDb;
         juce::String gainParamID = "Band" + juce::String(b + 1) + "Gain";
-        auto* param = apvts.getParameter(gainParamID);
-        if (param != nullptr) {
+        if (auto* param = apvts.getParameter(gainParamID)) {
             if (auto* paramFloat = dynamic_cast<juce::AudioParameterFloat*>(param)) {
-                float oldDbVal = paramFloat->get(); // actual dB
+                float oldDbVal = paramFloat->get();
                 float newDbVal = juce::jlimit(-24.0f, 24.0f, oldDbVal + step);
                 paramFloat->beginChangeGesture();
                 paramFloat->setValueNotifyingHost(paramFloat->getNormalisableRange().convertTo0to1(newDbVal));
@@ -290,23 +309,22 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
             }
         }
     }
-    bool allClose = true;
+    bool allStable = true;
     for (int b = 0; b < numBands; ++b) {
-        if (std::fabs(differences[b]) > 2.0f) {
-            allClose = false;
+        float sumSq = 0.0f;
+        for (float d : diffHistory[b])
+            sumSq += d * d;
+        float meanSq = sumSq / (float)diffHistorySize;
+        float rmsDiff = std::sqrt(meanSq);
+        if (rmsDiff > 2.0f) {
+            allStable = false;
             break;
         }
     }
 
-    if (allClose) {
-        blocksCloseToTarget++;
-        if (blocksCloseToTarget >= freezeThresholdBlocks) {
-            stopAutoEQ();
-            return;
-        }
-    }
-    else {
-        blocksCloseToTarget = 0;
+    if (allStable) {
+        stopAutoEQ();
+        return;
     }
 }
 

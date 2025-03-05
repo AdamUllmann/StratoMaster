@@ -117,6 +117,9 @@ private:
 
     int blocksCloseToTarget = 0;
     static constexpr int freezeThresholdBlocks = 240;
+    static constexpr int diffHistorySize = 64;
+    std::array<std::vector<float>, numBands> diffHistory;
+    std::array<int, numBands> diffIndex;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
