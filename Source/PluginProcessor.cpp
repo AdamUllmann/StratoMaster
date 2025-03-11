@@ -50,7 +50,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
 
             params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 paramID, paramName,
-                juce::NormalisableRange<float>(-24.f, 24.f, 0.f, 1.f),
+                juce::NormalisableRange<float>(-12.f, 12.f, 0.f, 1.f),
                 0.0f
             ));
         }
@@ -310,7 +310,7 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
         if (auto* param = apvts.getParameter(gainParamID)) {
             if (auto* paramFloat = dynamic_cast<juce::AudioParameterFloat*>(param)) {
                 float oldDbVal = paramFloat->get();
-                float newDbVal = juce::jlimit(-24.0f, 24.0f, oldDbVal + step);
+                float newDbVal = juce::jlimit(-12.0f, 12.0f, oldDbVal + step);
                 paramFloat->beginChangeGesture();
                 paramFloat->setValueNotifyingHost(paramFloat->getNormalisableRange().convertTo0to1(newDbVal));
                 paramFloat->endChangeGesture();

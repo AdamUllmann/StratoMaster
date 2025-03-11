@@ -146,7 +146,11 @@ void ParametricEQComponent::drawSpectrum(juce::Graphics& g, juce::Rectangle<int>
         float x = frequencyToX(binFreq);
         x = juce::jlimit<float>((float)graphArea.getX(), (float)graphArea.getRight(), x);
 
-        float y = gainToY(magDb);
+        const float spectrumMinDb = -35.f;
+        const float spectrumMaxDb = 35.f;
+        float norm = juce::jmap(magDb, spectrumMinDb, spectrumMaxDb, 0.f, 1.f);
+        float y = graphArea.getBottom() - norm * (float)graphArea.getHeight();
+        y = juce::jlimit<float>((float)graphArea.getY(), (float)graphArea.getBottom(), y);
 
         if (firstPoint)
         {
@@ -300,8 +304,8 @@ float ParametricEQComponent::xToFrequency(float x) const
 float ParametricEQComponent::gainToY(float gainDB) const
 {
     auto r = getGraphBounds();
-    const float minGain = -24.f;
-    const float maxGain = 24.f;
+    const float minGain = -12.f;
+    const float maxGain = 12.f;
     float norm = (gainDB - minGain) / (maxGain - minGain);
     float y = r.getBottom() - norm * (float)r.getHeight();
     return y;
@@ -310,8 +314,8 @@ float ParametricEQComponent::gainToY(float gainDB) const
 float ParametricEQComponent::yToGain(float y) const
 {
     auto r = getGraphBounds();
-    const float minGain = -24.f;
-    const float maxGain = 24.f;
+    const float minGain = -12.f;
+    const float maxGain = 12.f;
     float t = (r.getBottom() - y) / (float)r.getHeight();
     t = juce::jlimit(0.0f, 1.0f, t);
     return minGain + t * (maxGain - minGain);
@@ -327,7 +331,7 @@ void ParametricEQComponent::drawBackgroundGrid(juce::Graphics& g, juce::Rectangl
 
     // dB lines to mark
     static const std::array<float, 5> dbLines{
-        -24.f, -12.f, 0.f, 12.f, 24.f
+        -12.f, -6.f, 0.f, 6.f, 12.f
     };
 
     g.setColour(juce::Colours::grey.withAlpha(0.3f));
