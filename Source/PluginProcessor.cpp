@@ -216,7 +216,7 @@ void StratomasterAudioProcessor::startAutoEQ() {
     isAutoEQActive = true;
     blocksCloseToTarget = 0;
     static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f, 1000.f, 2000.f, 5000.f, 10000.f };
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 8; i++) {
         {
             juce::String freqID = "Band" + juce::String(i + 1) + "Freq";
             auto* freqParam = apvts.getParameter(freqID);
@@ -255,6 +255,10 @@ void StratomasterAudioProcessor::stopAutoEQ() {
 }
 
 void StratomasterAudioProcessor::doAutoEQFromFFT() {
+    if (!isAutoEQActive) {
+        return;
+    }
+
     std::array<float, numBands> sumMag{};
     std::array<int, numBands> count{};
     int fftLen = (int)fftMagnitudes.size();
