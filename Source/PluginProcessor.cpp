@@ -265,7 +265,7 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
     if (fftLen < 1) return;
     double sr = getSampleRate();
     if (sr <= 0.0) sr = 44100.0;
-    for (int k = 0; k < fftLen; ++k) {
+    for (int k = 0; k < fftLen; k++) {
         float freq = (float)(k * (sr * 0.5 / fftLen));
         float magLin = fftMagnitudes[k];
         for (int b = 0; b < numBands; ++b) {
@@ -291,16 +291,20 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
     }
     if (used < 1) return;
     float globalMean = sumAll / (float)used;
+    float globalMeanDb = juce::Decibels::gainToDecibels(globalMean + 1e-9f);
     for (int b = 0; b < numBands; ++b) {
-        if (bandMag[b] <= 0.0f) continue; // skip empty band
-        float diffLin = globalMean - bandMag[b];
-        float ratio = (globalMean + 1e-9f) / (bandMag[b] + 1e-9f);
-        float diffDb = juce::Decibels::gainToDecibels(ratio);
+        float bandDbVal = juce::Decibels::gainToDecibels(bandMag[b] + 1e-9f);
+        if (bandDbVal < -60.0f) continue;
+        float diffDb = globalMeanDb - bandDbVal;
         int idx = diffIndex[b];
         diffHistory[b][idx] = diffDb;
         diffIndex[b] = (idx + 1) % diffHistorySize;
         if (std::fabs(diffDb) < 1.5f) continue;
-        float stepScale = (std::fabs(diffDb) >= 6.0f) ? 0.001f : 0.0003f;
+        float stepScaleBoost = 0.0003f;
+        float stepScaleCut = 0.0008f;
+        float stepScale = (diffDb > 0.f) ? stepScaleBoost : stepScaleCut;
+        if (std::fabs(diffDb) >= 6.0f)
+            stepScale *= 3.0f;
         float step = stepScale * diffDb;
         juce::String gainParamID = "Band" + juce::String(b + 1) + "Gain";
         if (auto* param = apvts.getParameter(gainParamID)) {
