@@ -69,8 +69,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         {
             auto filterParamID = "Band" + bandIndexStr + "FilterType";
             auto filterParamName = "Band " + bandIndexStr + " Filter Type";
-            juce::StringArray filterChoices{ "Parametric", "Low Pass", "High Pass", "Low Shelf", "High Shelf" };
-            int defaultIndex = 0;
+            juce::StringArray filterChoices{ "Low Pass", "Peak", "High Pass", "Low Shelf", "High Shelf" };
+            int defaultIndex = 1;
             if (i == 0)  // band 1
                 defaultIndex = 3;
             else if (i == 7) // band 8
