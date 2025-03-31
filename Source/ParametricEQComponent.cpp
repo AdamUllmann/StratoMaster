@@ -76,16 +76,12 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
 
         auto filterTypeParamID = "Band" + juce::String(i + 1) + "FilterType";
 
-        // Make the ComboBox visible
         addAndMakeVisible(filterTypeBoxes[i]);
 
-        // (Optional) set textual items. But if you only rely on the parameter’s
-        // own choice labels, you can skip this if you like. Usually you do:
         filterTypeBoxes[i].addItem("Low Pass", 1);
         filterTypeBoxes[i].addItem("Band Pass", 2);
         filterTypeBoxes[i].addItem("High Pass", 3);
 
-        // Attach it to the parameter so changes sync
         bandAttachments[i].filterTypeAttachment.reset(
             new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
                 audioProcessor.apvts,
@@ -444,10 +440,36 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
             float bFreq = audioProcessor.apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Freq")->load();
             float bGain = audioProcessor.apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Gain")->load();
             float bQ = audioProcessor.apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Q")->load();
-            auto coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(sr,
-                (double)bFreq,
-                (double)bQ,
-                juce::Decibels::decibelsToGain((double)bGain));
+            int filterTypeIndex = (int)*audioProcessor.apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "FilterType");
+            juce::dsp::IIR::Coefficients<double>::Ptr coeffs;
+            switch (filterTypeIndex) {
+            case 0:
+                coeffs = juce::dsp::IIR::Coefficients<double>::makeLowPass(
+                    sr, (double)bFreq, (double)bQ
+                );
+                break;
+            case 1:
+                coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(
+                    sr,
+                    (double)bFreq,
+                    (double)bQ,
+                    juce::Decibels::decibelsToGain((double)bGain)
+                );
+                break;
+            case 2:
+                coeffs = juce::dsp::IIR::Coefficients<double>::makeHighPass(
+                    sr, (double)bFreq, (double)bQ
+                );
+                break;
+            default:
+                coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(
+                    sr,
+                    (double)bFreq,
+                    (double)bQ,
+                    juce::Decibels::decibelsToGain((double)bGain)
+                );
+                break;
+            }
             double magLin = coeffs->getMagnitudeForFrequency(freq, sr);
             double magDb = juce::Decibels::gainToDecibels((float)magLin); // convert linear magnitude to dB
             totalDb += magDb;
