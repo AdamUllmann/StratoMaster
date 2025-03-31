@@ -74,6 +74,26 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
         qLabels[i].setJustificationType(juce::Justification::centred);
         addAndMakeVisible(qLabels[i]);
 
+        auto filterTypeParamID = "Band" + juce::String(i + 1) + "FilterType";
+
+        // Make the ComboBox visible
+        addAndMakeVisible(filterTypeBoxes[i]);
+
+        // (Optional) set textual items. But if you only rely on the parameter’s
+        // own choice labels, you can skip this if you like. Usually you do:
+        filterTypeBoxes[i].addItem("Low Pass", 1);
+        filterTypeBoxes[i].addItem("Band Pass", 2);
+        filterTypeBoxes[i].addItem("High Pass", 3);
+
+        // Attach it to the parameter so changes sync
+        bandAttachments[i].filterTypeAttachment.reset(
+            new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+                audioProcessor.apvts,
+                filterTypeParamID,
+                filterTypeBoxes[i]
+            )
+        );
+
         bandHandles[i].bandIndex = i;
         bandHandles[i].centre = { 0.f, 0.f };
     }
@@ -198,6 +218,12 @@ void ParametricEQComponent::resized()
             auto qLabelArea = qArea.removeFromTop(labelHeight);
             qLabels[i].setBounds(qLabelArea.withTrimmedTop(2));
             qSliders[i].setBounds(qArea);
+        }
+        {
+            auto filterBoxHeight = 20;
+            auto filterBoxArea = column.removeFromBottom(filterBoxHeight);
+
+            filterTypeBoxes[i].setBounds(filterBoxArea);
         }
     }
 }

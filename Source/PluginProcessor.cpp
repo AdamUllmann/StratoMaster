@@ -65,6 +65,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
                 1.0f
             ));
         }
+        // type
+        {
+            auto filterParamID = "Band" + bandIndexStr + "FilterType";
+            auto filterParamName = "Band " + bandIndexStr + " Filter Type";
+            juce::StringArray filterChoices{ "Low Pass", "Band Pass", "High Pass" };
+
+            params.push_back(std::make_unique<juce::AudioParameterChoice>(
+                filterParamID,            // parameter ID
+                filterParamName,          // parameter name
+                filterChoices,            // list of filter-mode strings
+                1                         // default index (e.g. 1 => Band Pass)
+            ));
+        }
     }
 
     // ========== COMPRESSOR PARAMETERS ==========
@@ -350,12 +363,35 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         float freqValue = apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Freq")->load();
         float gainValue = apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Gain")->load();
         float qValue = apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "Q")->load();
-        auto coeffs = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
-            getSampleRate(),
-            freqValue,
-            qValue,
-            juce::Decibels::decibelsToGain(gainValue)
-        );
+        int filterTypeIndex = (int)*apvts.getRawParameterValue("Band" + juce::String(bandIndex + 1) + "FilterType");
+
+        juce::dsp::IIR::Coefficients<float>::Ptr coeffs;
+
+        switch (filterTypeIndex)
+        {
+        case 0:
+            coeffs = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                getSampleRate(),
+                freqValue,
+                qValue
+            );
+            break;
+        case 1:
+            coeffs = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+                getSampleRate(),
+                freqValue,
+                qValue,
+                juce::Decibels::decibelsToGain(gainValue)
+            );
+            break;
+        case 2:
+            coeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(
+                getSampleRate(),
+                freqValue,
+                qValue
+            );
+            break;
+        }
         *peakFilters[bandIndex].state = *coeffs;
     }
     juce::dsp::AudioBlock<float> audioBlock(buffer);

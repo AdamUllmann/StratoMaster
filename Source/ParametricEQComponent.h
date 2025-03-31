@@ -7,6 +7,7 @@ struct EQBandAttachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> freqAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> qAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> filterTypeAttachment;
 };
 
 //==============================================================================
@@ -44,6 +45,8 @@ private:
     juce::Label resHeaderLabel;
 
     EQBandAttachments bandAttachments[numBands];
+
+    juce::ComboBox filterTypeBoxes[numBands];
 
     struct BandHandle
     {
