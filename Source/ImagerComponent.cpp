@@ -34,7 +34,7 @@ ImagerComponent::ImagerComponent(StratomasterAudioProcessor& proc, juce::AudioPr
     stereoizeLabel.setText("Stereoize", juce::dontSendNotification);
     stereoizeLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(stereoizeLabel); */
-    startTimerHz(60);
+    startTimerHz(120);
 }
 
 ImagerComponent::~ImagerComponent()
