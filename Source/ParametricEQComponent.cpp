@@ -79,8 +79,10 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
         addAndMakeVisible(filterTypeBoxes[i]);
 
         filterTypeBoxes[i].addItem("Low Pass", 1);
-        filterTypeBoxes[i].addItem("Band Pass", 2);
+        filterTypeBoxes[i].addItem("Peak", 2);
         filterTypeBoxes[i].addItem("High Pass", 3);
+        filterTypeBoxes[i].addItem("Low Shelf", 4);
+        filterTypeBoxes[i].addItem("High Shelf", 5);
 
         bandAttachments[i].filterTypeAttachment.reset(
             new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
@@ -448,6 +450,7 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
                     sr, (double)bFreq, (double)bQ
                 );
                 break;
+
             case 1:
                 coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(
                     sr,
@@ -456,11 +459,31 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
                     juce::Decibels::decibelsToGain((double)bGain)
                 );
                 break;
+
             case 2:
                 coeffs = juce::dsp::IIR::Coefficients<double>::makeHighPass(
                     sr, (double)bFreq, (double)bQ
                 );
                 break;
+
+            case 3: // Low Shelf
+                coeffs = juce::dsp::IIR::Coefficients<double>::makeLowShelf(
+                    sr,
+                    (double)bFreq,
+                    (double)bQ,
+                    juce::Decibels::decibelsToGain((double)bGain)
+                );
+                break;
+
+            case 4: // High Shelf
+                coeffs = juce::dsp::IIR::Coefficients<double>::makeHighShelf(
+                    sr,
+                    (double)bFreq,
+                    (double)bQ,
+                    juce::Decibels::decibelsToGain((double)bGain)
+                );
+                break;
+
             default:
                 coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(
                     sr,
