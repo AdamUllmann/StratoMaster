@@ -20,7 +20,7 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
     {
         // --- frequency knobs ---
         freqSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        freqSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+        freqSliders[i].setTextBoxStyle(juce::Slider::NoTextBox, false, 50, 20);
         addAndMakeVisible(freqSliders[i]);
         freqSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
 
@@ -38,7 +38,9 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
 
         // --- gain knobs ---
         gainSliders[i].setSliderStyle(juce::Slider::LinearVertical);
-        gainSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
+        gainSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+        gainSliders[i].setNumDecimalPlacesToDisplay(2);
+
         addAndMakeVisible(gainSliders[i]);
         gainSliders[i].setColour(juce::Slider::trackColourId, bandColours[i]);
 
@@ -56,7 +58,7 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
 
         // --- Q knobs ---
         qSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        qSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+        qSliders[i].setTextBoxStyle(juce::Slider::NoTextBox, false, 50, 20);
         addAndMakeVisible(qSliders[i]);
         qSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
 
@@ -168,24 +170,35 @@ void ParametricEQComponent::drawSpectrum(juce::Graphics& g, juce::Rectangle<int>
     g.fillPath(spectrumPath);
 }
 
-void ParametricEQComponent::resized()
+void ParametricEQComponent::resized() 
 {
     auto bounds = getLocalBounds();
     auto controlArea = bounds.removeFromRight(300);
     updateHandlePositions();
-    auto columnWidth = controlArea.getWidth() / numBands;
-    for (int i = 0; i < numBands; ++i)
-    {
+    const int columnWidth = controlArea.getWidth() / numBands;
+    const int columnHeight = controlArea.getHeight();
+    for (int i = 0; i < numBands; ++i) {
         auto column = controlArea.removeFromLeft(columnWidth);
-        auto columnHeight = column.getHeight();
-        auto sliderHeight = columnHeight * 0.5f;
-        auto knobHeight = columnHeight * 0.25f;
-        auto gainRect = column.removeFromTop((int)sliderHeight);
-        gainSliders[i].setBounds(gainRect);
-        auto freqRect = column.removeFromTop((int)knobHeight);
-        freqSliders[i].setBounds(freqRect.withSizeKeepingCentre(60, 60));
-        auto qRect = column;
-        qSliders[i].setBounds(qRect.withSizeKeepingCentre(60, 60));
+        auto sliderHeight = static_cast<int>(columnHeight * 0.5f);
+        auto knobHeight = static_cast<int>(columnHeight * 0.25f);
+        {
+            auto gainArea = column.removeFromTop(sliderHeight);
+            gainSliders[i].setBounds(gainArea);  // leftover
+        }
+        {
+            auto freqArea = column.removeFromTop(knobHeight);
+            int labelHeight = 40;
+            auto freqLabelArea = freqArea.removeFromTop(labelHeight);
+            freqLabels[i].setBounds(freqLabelArea.withTrimmedTop(2));
+            freqSliders[i].setBounds(freqArea);
+        }
+        {
+            auto qArea = column;
+            int labelHeight = 40;
+            auto qLabelArea = qArea.removeFromTop(labelHeight);
+            qLabels[i].setBounds(qLabelArea.withTrimmedTop(2));
+            qSliders[i].setBounds(qArea);
+        }
     }
 }
 

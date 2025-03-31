@@ -37,7 +37,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
             juce::String paramID = "Band" + bandIndexStr + "Freq";
             juce::String paramName = "Band " + bandIndexStr + " Freq";
 
-            params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            params.push_back(std::make_unique<MyFloatParameter>(
                 paramID, paramName,
                 juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.5f),
                 defaultFreqs[i]
@@ -48,7 +48,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
             juce::String paramID = "Band" + bandIndexStr + "Gain";
             juce::String paramName = "Band " + bandIndexStr + " Gain";
 
-            params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            params.push_back(std::make_unique<MyFloatParameter>(
                 paramID, paramName,
                 juce::NormalisableRange<float>(-12.f, 12.f, 0.f, 1.f),
                 0.0f
@@ -59,7 +59,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
             juce::String paramID = "Band" + bandIndexStr + "Q";
             juce::String paramName = "Band " + bandIndexStr + " Q";
 
-            params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            params.push_back(std::make_unique<MyFloatParameter>(
                 paramID, paramName,
                 juce::NormalisableRange<float>(0.1f, 10.f, 0.f, 1.f),
                 1.0f

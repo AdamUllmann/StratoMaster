@@ -123,3 +123,18 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
+
+class MyFloatParameter : public juce::AudioParameterFloat {
+public:
+    MyFloatParameter(const juce::String& parameterID, const juce::String& parameterName, juce::NormalisableRange<float> range, float defaultValue)
+        : juce::AudioParameterFloat(parameterID, parameterName, range, defaultValue) {
+    }
+    juce::String getText(float normalizedValue, int /*maxLength*/) const override {
+        auto dBValue = range.convertFrom0to1(normalizedValue);
+        return juce::String(dBValue, 2);
+    }
+    float getValueForText(const juce::String& text) const override {
+        auto dBValue = text.getFloatValue();
+        return range.convertTo0to1(dBValue);
+    }
+};
