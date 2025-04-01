@@ -83,7 +83,7 @@ auto dBToFraction = [](float dBVal)
 
 void MaximizerComponent::paint(juce::Graphics& g)
 {
-    juce::ColourGradient gradient(juce::Colour(30, 30, 30), 0, 0, juce::Colour(30, 30, 30), getWidth(), 0, false);
+    juce::ColourGradient gradient(juce::Colour(40, 40, 40), 0, 0, juce::Colour(40, 40, 40), getWidth(), 0, false);
     gradient.addColour(0.2, juce::Colour(60, 60, 60));
     gradient.addColour(0.5, juce::Colour(80, 80, 80));
     gradient.addColour(0.8, juce::Colour(60, 60, 60));
@@ -158,7 +158,7 @@ void MaximizerComponent::resized()
 {
     auto area = getLocalBounds().reduced(10);
     int meterWidth = 50;
-    float sliderWidth = 0.3f;
+    float sliderWidth = 0.02f;
     auto thresholdArea = area.removeFromLeft((int)(area.getWidth() * 0.2f));
     thresholdLabel.setBounds(thresholdArea.removeFromTop(20));
     thresholdSlider.setBounds(thresholdArea);

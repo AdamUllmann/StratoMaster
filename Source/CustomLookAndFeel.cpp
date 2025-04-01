@@ -175,3 +175,165 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics& g,
         g.fillPath(pointer);
     }
 }
+
+void CustomLookAndFeel::drawLinearSlider(juce::Graphics& g,
+    int x, int y, int width, int height,
+    float sliderPos, float minSliderPos, float maxSliderPos,
+    const juce::Slider::SliderStyle style, juce::Slider& slider) {
+    const float trackThickness = 10.0f;
+    if (style == juce::Slider::LinearHorizontal) {
+        const float trackY = y + (height - trackThickness) * 0.5f;
+        juce::Rectangle<float> trackBounds(x, trackY, width, trackThickness);
+        juce::Path trackPath;
+        trackPath.addRoundedRectangle(trackBounds.getX(), trackBounds.getY(),
+            trackBounds.getWidth(), trackBounds.getHeight(), 5.0f);
+        juce::ColourGradient trackGradient(juce::Colour(170, 170, 170),
+            trackBounds.getX(), trackBounds.getY(),
+            juce::Colour(60, 60, 60),
+            trackBounds.getRight(), trackBounds.getBottom(), false);
+        trackGradient.addColour(0.5, juce::Colour(110, 110, 110));
+        g.setGradientFill(trackGradient);
+        g.fillPath(trackPath);
+        g.setColour(juce::Colours::black.withAlpha(0.3f));
+        g.strokePath(trackPath, juce::PathStrokeType(1.0f));
+        juce::Rectangle<float> innerTrack = trackBounds.reduced(2);
+        g.setColour(juce::Colour(10, 10, 10));
+        g.fillRoundedRectangle(innerTrack.getX(), innerTrack.getY(),
+            innerTrack.getWidth(), innerTrack.getHeight(), 4.0f);
+        {
+            const int numLEDs = 29;
+            float trackLeft = trackBounds.getX();
+            float trackWidth = trackBounds.getWidth();
+            float centerY = trackBounds.getCentreY();
+            float ledRadius = 2.0f;
+            juce::Colour ledOnColour = slider.findColour(juce::Slider::rotarySliderFillColourId);
+            juce::Colour ledOffColour = juce::Colour(30, 30, 30);
+            float thumbCenterX = sliderPos;
+            for (int i = 0; i < numLEDs; ++i) {
+                float ledFraction = (i + 1.0f) / (numLEDs + 1.0f);
+                float cx = trackLeft + ledFraction * trackWidth;
+                float diff = thumbCenterX - cx;
+                float intensity = juce::jlimit(0.0f, 1.0f, diff / (ledRadius * 2.0f));
+                juce::Colour baseColour = ledOffColour.interpolatedWith(ledOnColour, intensity);
+                juce::Rectangle<float> ledRect(cx - ledRadius, centerY - ledRadius,
+                    ledRadius * 2.0f, ledRadius * 2.0f);
+                g.setColour(baseColour);
+                g.fillEllipse(ledRect);
+                g.setColour(juce::Colours::white.withAlpha(0.4f * intensity));
+                g.fillEllipse(ledRect.reduced(ledRadius * 0.3f));
+            }
+        }
+        const float thumbDiameter = height * 0.8f;
+        const float thumbX = sliderPos - thumbDiameter * 0.5f;
+        const float thumbY = y + (height - thumbDiameter) * 0.5f;
+        juce::Rectangle<float> thumbBounds(thumbX, thumbY, thumbDiameter, thumbDiameter);
+        juce::Path shadowPath;
+        shadowPath.addEllipse(thumbBounds.translated(2.0f, 2.0f));
+        g.setColour(juce::Colours::black.withAlpha(0.4f));
+        g.fillPath(shadowPath);
+        juce::Path thumbPath;
+        thumbPath.addEllipse(thumbBounds);
+        juce::ColourGradient radialGrad(juce::Colour(220, 220, 220),
+            thumbBounds.getCentreX(), thumbBounds.getCentreY(),
+            juce::Colour(100, 100, 100),
+            thumbBounds.getRight(), thumbBounds.getBottom(),
+            true);
+        radialGrad.addColour(0.5, juce::Colour(160, 160, 160));
+        g.setGradientFill(radialGrad);
+        g.fillPath(thumbPath);
+        juce::Path highlight;
+        float highlightDiameter = thumbDiameter * 0.4f;
+        highlight.addEllipse(thumbX + thumbDiameter * 0.15f,
+            thumbY + thumbDiameter * 0.15f,
+            highlightDiameter, highlightDiameter);
+        g.setColour(juce::Colours::white.withAlpha(0.3f));
+        g.fillPath(highlight);
+        g.setColour(juce::Colours::black.withAlpha(0.3f));
+        g.strokePath(thumbPath, juce::PathStrokeType(1.0f));
+        {
+            float centerLedRadius = 3.0f;
+            juce::Point<float> center = thumbBounds.getCentre();
+            juce::Rectangle<float> centerLedRect(center.x - centerLedRadius, center.y - centerLedRadius, centerLedRadius * 2.0f, centerLedRadius * 2.0f);
+            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
+            g.fillEllipse(centerLedRect);
+        }
+    }
+    else if (style == juce::Slider::LinearVertical) {
+        const float trackWidth = 10.0f;
+        const float trackX = x + (width - trackWidth) * 0.5f;
+        juce::Rectangle<float> trackBounds(trackX, y, trackWidth, height);
+        juce::Path trackPath;
+        trackPath.addRoundedRectangle(trackBounds.getX(), trackBounds.getY(),
+            trackBounds.getWidth(), trackBounds.getHeight(), 5.0f);
+        juce::ColourGradient trackGradient(juce::Colour(170, 170, 170),
+            trackBounds.getX(), trackBounds.getY(),
+            juce::Colour(60, 60, 60),
+            trackBounds.getRight(), trackBounds.getBottom(), false);
+        trackGradient.addColour(0.5, juce::Colour(110, 110, 110));
+        g.setGradientFill(trackGradient);
+        g.fillPath(trackPath);
+        g.setColour(juce::Colours::black.withAlpha(0.3f));
+        g.strokePath(trackPath, juce::PathStrokeType(1.0f));
+        juce::Rectangle<float> innerTrack = trackBounds.reduced(2);
+        g.setColour(juce::Colour(10, 10, 10));
+        g.fillRoundedRectangle(innerTrack.getX(), innerTrack.getY(),
+            innerTrack.getWidth(), innerTrack.getHeight(), 4.0f);
+        {
+            const int numLEDs = 29;
+            float trackBottom = trackBounds.getBottom();
+            float trackHeight = trackBounds.getHeight();
+            float centerX = trackBounds.getCentreX();
+            float ledRadius = 2.0f;
+            juce::Colour ledOnColour = slider.findColour(juce::Slider::trackColourId);
+            juce::Colour ledOffColour = juce::Colour(30, 30, 30);
+            float thumbCenterY = sliderPos;
+            for (int i = 0; i < numLEDs; ++i) {
+                float ledFraction = (i + 1.0f) / (numLEDs + 1.0f);
+                float cy = trackBottom - ledFraction * trackHeight;
+                float diff = cy - thumbCenterY;
+                float intensity = juce::jlimit(0.0f, 1.0f, diff / (ledRadius * 2.0f));
+                juce::Colour baseColour = ledOffColour.interpolatedWith(ledOnColour, intensity);
+                juce::Rectangle<float> ledRect(centerX - ledRadius, cy - ledRadius,
+                    ledRadius * 2.0f, ledRadius * 2.0f);
+                g.setColour(baseColour);
+                g.fillEllipse(ledRect);
+                g.setColour(juce::Colours::white.withAlpha(0.4f * intensity));
+                g.fillEllipse(ledRect.reduced(ledRadius * 0.3f));
+            }
+        }
+        const float thumbDiameter = height * 0.08f;
+        const float thumbY = sliderPos - (thumbDiameter * 0.5f);
+        const float thumbX = x + (width - thumbDiameter) * 0.5f;
+        juce::Rectangle<float> thumbBounds(thumbX, thumbY, thumbDiameter, thumbDiameter);
+        juce::Path shadowPath;
+        shadowPath.addEllipse(thumbBounds.translated(2.0f, 2.0f));
+        g.setColour(juce::Colours::black.withAlpha(0.4f));
+        g.fillPath(shadowPath);
+        juce::Path thumbPath;
+        thumbPath.addEllipse(thumbBounds);
+        juce::ColourGradient radialGrad(juce::Colour(220, 220, 220),
+            thumbBounds.getCentreX(), thumbBounds.getCentreY(),
+            juce::Colour(100, 100, 100),
+            thumbBounds.getRight(), thumbBounds.getBottom(),
+            true);
+        radialGrad.addColour(0.5, juce::Colour(160, 160, 160));
+        g.setGradientFill(radialGrad);
+        g.fillPath(thumbPath);
+        juce::Path highlight;
+        float highlightDiameter = thumbDiameter * 0.4f;
+        highlight.addEllipse(thumbX + thumbDiameter * 0.15f,
+            thumbY + thumbDiameter * 0.15f,
+            highlightDiameter, highlightDiameter);
+        g.setColour(juce::Colours::white.withAlpha(0.3f));
+        g.fillPath(highlight);
+        g.setColour(juce::Colours::black.withAlpha(0.3f));
+        g.strokePath(thumbPath, juce::PathStrokeType(1.0f));
+        {
+            float centerLedRadius = 2.0f;
+            juce::Point<float> center = thumbBounds.getCentre();
+            juce::Rectangle<float> centerLedRect(center.x - centerLedRadius, center.y - centerLedRadius, centerLedRadius * 2.0f, centerLedRadius * 2.0f);
+            g.setColour(slider.findColour(juce::Slider::trackColourId));
+            g.fillEllipse(centerLedRect);
+        }
+    }
+}
