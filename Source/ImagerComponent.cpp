@@ -16,6 +16,7 @@ ImagerComponent::ImagerComponent(StratomasterAudioProcessor& proc, juce::AudioPr
     // Width
     widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
+    widthSlider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::cyan.withAlpha(0.8f));
     addAndMakeVisible(widthSlider);
 
     attachments.widthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(apvtsRef, "ImagerWidth", widthSlider));
@@ -75,7 +76,7 @@ void ImagerComponent::paint(juce::Graphics& g)
     g.drawFittedText("R", scopeArea.getRight() - 25, cy - textOffset, 20, 20, juce::Justification::right, 1);
     g.drawFittedText("+1", cx, scopeArea.getY() + 2, 20, 20, juce::Justification::centred, 1);
     g.drawFittedText("-1", cx, scopeArea.getBottom() - 20, 20, 20, juce::Justification::centred, 1);
-    g.setColour(juce::Colours::cyan.withAlpha(0.8f));
+    g.setColour(juce::Colours::cyan.withAlpha(0.95f));
     const int scopeIndex = audioProcessor.getScopeIndex();
     const int scopeSize = audioProcessor.getScopeSize();
     const float* bufferData = audioProcessor.getScopeBuffer();

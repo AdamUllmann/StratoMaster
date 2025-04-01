@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "CustomLookAndFeel.h"
 #include "ParametricEQComponent.h"
 #include "CompressorComponent.h"
 #include "MaximizerComponent.h"
@@ -19,6 +20,8 @@ public:
 
 private:
     StratomasterAudioProcessor& audioProcessor;
+
+    std::unique_ptr<CustomLookAndFeel> customLF;
 
     juce::TabbedComponent tabs{ juce::TabbedButtonBar::TabsAtTop };
 

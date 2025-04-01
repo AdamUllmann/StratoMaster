@@ -2,6 +2,8 @@
 
 StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterAudioProcessor& p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
+    customLF.reset(new CustomLookAndFeel());
+    setLookAndFeel(customLF.get());
     tabs.addTab("EQ", juce::Colours::grey, &eqComponent, false);
     tabs.addTab("Compressor", juce::Colours::grey, &compressorComp, false);
     tabs.addTab("Imager", juce::Colours::grey, &imagerComp, false);
@@ -52,6 +54,7 @@ void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadc
 
 StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
 {
+    setLookAndFeel(nullptr);
 }
 
 void StratomasterAudioProcessorEditor::paint(juce::Graphics& g)
