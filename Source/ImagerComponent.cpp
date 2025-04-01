@@ -62,6 +62,8 @@ void ImagerComponent::paint(juce::Graphics& g)
     gradient.addColour(0.8, juce::Colour(60, 60, 60));
     g.setGradientFill(gradient);
     g.fillAll();
+    g.setColour(juce::Colours::black);
+    g.fillRect(scopeArea);
     g.setColour(juce::Colours::grey);
     g.drawRect(scopeArea);
     const int cx = scopeArea.getCentreX();

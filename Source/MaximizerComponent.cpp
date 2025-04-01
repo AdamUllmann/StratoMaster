@@ -91,7 +91,7 @@ void MaximizerComponent::paint(juce::Graphics& g)
     g.fillAll();
 
     // background for the meter
-    g.setColour(juce::Colours::darkgrey.darker());
+    g.setColour(juce::Colours::black);
     g.fillRect(meterRect);
     float peakDb = audioProcessor.getMaximizerPeak();
     float peakFill = dBToFraction(peakDb);
