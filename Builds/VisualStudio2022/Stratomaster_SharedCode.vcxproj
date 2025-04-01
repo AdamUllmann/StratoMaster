@@ -143,6 +143,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\CustomLookAndFeel.cpp"/>
     <ClCompile Include="..\..\Source\ImagerComponent.cpp"/>
     <ClCompile Include="..\..\Source\MaximizerComponent.cpp"/>
     <ClCompile Include="..\..\Source\CompressorComponent.cpp"/>
@@ -3137,6 +3138,7 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_opengl.cpp"/>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\CustomLookAndFeel.h"/>
     <ClInclude Include="..\..\Source\ImagerComponent.h"/>
     <ClInclude Include="..\..\Source\MaximizerComponent.h"/>
     <ClInclude Include="..\..\Source\CompressorComponent.h"/>

@@ -85,7 +85,12 @@ CompressorComponent::~CompressorComponent()
 
 void CompressorComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(35, 35, 35));
+    juce::ColourGradient gradient(juce::Colour(30, 30, 30), 0, 0, juce::Colour(30, 30, 30), getWidth(), 0, false);
+    gradient.addColour(0.2, juce::Colour(60, 60, 60));
+    gradient.addColour(0.5, juce::Colour(80, 80, 80));
+    gradient.addColour(0.8, juce::Colour(60, 60, 60));
+    g.setGradientFill(gradient);
+    g.fillAll();
 }
 
 void CompressorComponent::resized()
