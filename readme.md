@@ -1,8 +1,10 @@
 # Stratomaster
 
+![Stratomaster](https://github.com/AdamUllmann/images-for-repos/blob/main/stratomaster.png?raw=true)
+
 **Stratomaster** is an all-in-one audio mastering plugin that includes:
 - **8-Band Parametric (and Shelving) EQ**
-- **Multiband Compressor** (Work in progress / conceptual in code)
+- **Multiband Compressor**
 - **Stereo Imager**
 - **Maximizer (Limiter)**
 - **Auto Mastering / Auto EQ** Feature

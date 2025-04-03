@@ -189,7 +189,7 @@ void CustomLookAndFeel::drawLinearSlider(juce::Graphics& g,
             trackBounds.getWidth(), trackBounds.getHeight(), 5.0f);
         juce::ColourGradient trackGradient(juce::Colour(170, 170, 170),
             trackBounds.getX(), trackBounds.getY(),
-            juce::Colour(60, 60, 60),
+            juce::Colour(140, 140, 140),
             trackBounds.getRight(), trackBounds.getBottom(), false);
         trackGradient.addColour(0.5, juce::Colour(110, 110, 110));
         g.setGradientFill(trackGradient);
@@ -267,7 +267,7 @@ void CustomLookAndFeel::drawLinearSlider(juce::Graphics& g,
             trackBounds.getWidth(), trackBounds.getHeight(), 5.0f);
         juce::ColourGradient trackGradient(juce::Colour(170, 170, 170),
             trackBounds.getX(), trackBounds.getY(),
-            juce::Colour(60, 60, 60),
+            juce::Colour(100, 100, 100),
             trackBounds.getRight(), trackBounds.getBottom(), false);
         trackGradient.addColour(0.5, juce::Colour(110, 110, 110));
         g.setGradientFill(trackGradient);
