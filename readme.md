@@ -113,6 +113,20 @@ All parameters are controlled via a single `AudioProcessorValueTreeState`, so ch
 
 ---
 
+## Installation for VST3
+1. Download the plugin from the latest release (you want the .vst3 file).
+2. Move the downloaded .vst3 file to C:Program_Files/Common_files/VST3.
+3. Follow your DAW's instructions for adding and scanning new plugins.
+  - In FL Studio, you would go to options -> manage plugins -> "find installed plugins"
+4. Locate Stratomaster in your DAW's plugin list and add it to a mixer track.
+
+---
+
+## Installation for Standalone on Windows
+1. Download the plugin from the latest release (you want the .exe file).
+2. Run Stratomaster.exe
+3. You are done. It's as simple as that.
+
 ## Additional Notes
 
 - **Parameter Sync**: All parameters (EQ band freq/gain/Q, compressor thresholds, stereo width, etc.) are stored in a `ValueTreeState`, so they save/load with your session.
