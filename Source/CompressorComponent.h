@@ -46,6 +46,8 @@ private:
     juce::AudioProcessorValueTreeState& apvtsRef;
     void addBandControls(BandControls& bc, CompressorAttachments& attach, const juce::String& prefix, juce::Colour colour);
     void layoutBand(BandControls& band, juce::Rectangle<int> area);
+    juce::Rectangle<int> lowArea, midArea, highArea;
+    void paintBandBox(juce::Graphics& g, juce::Rectangle<int> bandArea) const;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CompressorComponent)
 };
 

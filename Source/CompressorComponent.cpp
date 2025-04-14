@@ -37,6 +37,11 @@ void CompressorComponent::paint(juce::Graphics& g)
     gradient.addColour(0.8, juce::Colour(60, 60, 60));
     g.setGradientFill(gradient);
     g.fillAll();
+
+    paintBandBox(g, lowArea);
+    paintBandBox(g, midArea);
+    paintBandBox(g, highArea);
+
     g.setColour(juce::Colours::darkgrey.darker());
     auto area = getLocalBounds().reduced(10);
     int rowHeight = area.getHeight() / 3;
@@ -48,13 +53,14 @@ void CompressorComponent::paint(juce::Graphics& g)
 }
 
 void CompressorComponent::resized() {
-    auto bounds = getLocalBounds().reduced(10);
-    int rowHeight = bounds.getHeight() / 3;
-    auto lowArea = bounds.removeFromTop(rowHeight);
+    auto fullArea = getLocalBounds().reduced(10);
+    int bandHeight = fullArea.getHeight() / 3;
+    lowArea = fullArea.removeFromTop(bandHeight);
+    midArea = fullArea.removeFromTop(bandHeight);
+    highArea = fullArea;
     layoutBand(lowControls, lowArea);
-    auto midArea = bounds.removeFromTop(rowHeight);
     layoutBand(midControls, midArea);
-    layoutBand(highControls, bounds);
+    layoutBand(highControls, highArea);
 }
 
 void CompressorComponent::addBandControls(BandControls& bc, CompressorAttachments& attach, const juce::String& prefix, juce::Colour colour) {
@@ -149,3 +155,17 @@ void CompressorComponent::layoutBand(BandControls& band, juce::Rectangle<int> ar
     }
 }
 
+void CompressorComponent::paintBandBox(juce::Graphics& g, juce::Rectangle<int> bandArea) const {
+    auto top = (float)bandArea.getY();
+    auto bottom = (float)bandArea.getBottom();
+    auto left = (float)bandArea.getX();
+    auto right = (float)bandArea.getRight();
+    juce::ColourGradient gradient(juce::Colour(40, 40, 40), 0, 0, juce::Colour(40, 40, 40), getWidth(), 0, false);
+    gradient.addColour(0.2, juce::Colour(60, 60, 60));
+    gradient.addColour(0.5, juce::Colour(80, 80, 80));
+    gradient.addColour(0.8, juce::Colour(60, 60, 60));
+    g.setGradientFill(gradient);
+    g.fillRect(bandArea);
+    g.setColour(juce::Colours::black);
+    g.drawRect(bandArea, 2.0f);
+}
