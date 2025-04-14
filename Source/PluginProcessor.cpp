@@ -85,39 +85,85 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
     }
 
     // ========== COMPRESSOR PARAMETERS ==========
+    // low
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "CompThreshold",
-        "Compressor Threshold",
-        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
-        0.0f
+        "MBCompLowThreshold", "MBCompLowThreshold",
+        juce::NormalisableRange<float>(-60.f, 0.f, 0.1f),
+        0.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompLowRatio", "MBCompLowRatio",
+        juce::NormalisableRange<float>(1.f, 20.f, 0.1f),
+        1.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompLowAttack", "MBCompLowAttack",
+        juce::NormalisableRange<float>(1.f, 200.f, 1.f),
+        20.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompLowRelease", "MBCompLowRelease",
+        juce::NormalisableRange<float>(10.f, 1000.f, 1.f),
+        200.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompLowMakeup", "MBCompLowMakeup",
+        juce::NormalisableRange<float>(-24.f, 24.f, 0.1f),
+        0.f
     ));
 
+    // mid
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "CompRatio",
-        "Compressor Ratio",
-        juce::NormalisableRange<float>(1.0f, 20.0f, 0.1f),
-        1.0f
+        "MBCompMidThreshold", "MBCompMidThreshold",
+        juce::NormalisableRange<float>(-60.f, 0.f, 0.1f),
+        0.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompMidRatio", "MBCompMidRatio",
+        juce::NormalisableRange<float>(1.f, 20.f, 0.1f),
+        1.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompMidAttack", "MBCompMidAttack",
+        juce::NormalisableRange<float>(1.f, 200.f, 1.f),
+        20.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompMidRelease", "MBCompMidRelease",
+        juce::NormalisableRange<float>(10.f, 1000.f, 1.f),
+        200.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompMidMakeup", "MBCompMidMakeup",
+        juce::NormalisableRange<float>(-24.f, 24.f, 0.1f),
+        0.f
     ));
 
+    // hi
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "CompAttack",
-        "Compressor Attack",
-        juce::NormalisableRange<float>(1.0f, 200.0f, 1.0f),
-        20.0f
+        "MBCompHighThreshold", "MBCompHighThreshold",
+        juce::NormalisableRange<float>(-60.f, 0.f, 0.1f),
+        0.f
     ));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "CompRelease",
-        "Compressor Release",
-        juce::NormalisableRange<float>(10.0f, 1000.0f, 1.0f),
-        200.0f
+        "MBCompHighRatio", "MBCompHighRatio",
+        juce::NormalisableRange<float>(1.f, 20.f, 0.1f),
+        1.f
     ));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "CompMakeup",
-        "Compressor Makeup",
-        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
-        0.0f
+        "MBCompHighAttack", "MBCompHighAttack",
+        juce::NormalisableRange<float>(1.f, 200.f, 1.f),
+        20.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompHighRelease", "MBCompHighRelease",
+        juce::NormalisableRange<float>(10.f, 1000.f, 1.f),
+        200.f
+    ));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "MBCompHighMakeup", "MBCompHighMakeup",
+        juce::NormalisableRange<float>(-24.f, 24.f, 0.1f),
+        0.f
     ));
 
     // ========== MAXIMIZER PARAMETERS ==========
@@ -192,7 +238,24 @@ void StratomasterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
     fifoIndex = 0;
     fftDataReady.store(false);
 
-    compressor.prepare(spec);
+    // MULTIBAND COMPRESSOR
+    crossover1Low_L.prepare(spec);
+    crossover1Low_R.prepare(spec);
+    crossover1High_L.prepare(spec);
+    crossover1High_R.prepare(spec);
+
+    crossover2Low_L.prepare(spec);
+    crossover2Low_R.prepare(spec);
+    crossover2High_L.prepare(spec);
+    crossover2High_R.prepare(spec);
+
+    lowComp.prepare(spec);
+    midComp.prepare(spec);
+    highComp.prepare(spec);
+    lowMakeup.prepare(spec);
+    midMakeup.prepare(spec);
+    highMakeup.prepare(spec);
+
     limiter.prepare(spec);
 
     for (int b = 0; b < numBands; ++b)
@@ -353,6 +416,46 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
     }
 }
 
+void StratomasterAudioProcessor::updateMultibandCompressorParams()
+{
+    // ====== LOW ======
+    float lowThresh = apvts.getRawParameterValue("MBCompLowThreshold")->load();
+    float lowRatio = apvts.getRawParameterValue("MBCompLowRatio")->load();
+    float lowAttack = apvts.getRawParameterValue("MBCompLowAttack")->load();
+    float lowRelease = apvts.getRawParameterValue("MBCompLowRelease")->load();
+    float lowMakeupGain = apvts.getRawParameterValue("MBCompLowMakeup")->load();
+    lowComp.setThreshold(lowThresh);
+    lowComp.setRatio(lowRatio);
+    lowComp.setAttack(lowAttack);
+    lowComp.setRelease(lowRelease);
+    lowMakeup.setGainDecibels(lowMakeupGain);
+
+    // ====== MID ======
+    float midThresh = apvts.getRawParameterValue("MBCompMidThreshold")->load();
+    float midRatio = apvts.getRawParameterValue("MBCompMidRatio")->load();
+    float midAttack = apvts.getRawParameterValue("MBCompMidAttack")->load();
+    float midRelease = apvts.getRawParameterValue("MBCompMidRelease")->load();
+    float midMakeupGain = apvts.getRawParameterValue("MBCompMidMakeup")->load();
+    midComp.setThreshold(midThresh);
+    midComp.setRatio(midRatio);
+    midComp.setAttack(midAttack);
+    midComp.setRelease(midRelease);
+    midMakeup.setGainDecibels(midMakeupGain);
+
+    // ====== HIGH ======
+    float hiThresh = apvts.getRawParameterValue("MBCompHighThreshold")->load();
+    float hiRatio = apvts.getRawParameterValue("MBCompHighRatio")->load();
+    float hiAttack = apvts.getRawParameterValue("MBCompHighAttack")->load();
+    float hiRelease = apvts.getRawParameterValue("MBCompHighRelease")->load();
+    float hiMakeupGain = apvts.getRawParameterValue("MBCompHighMakeup")->load();
+    highComp.setThreshold(hiThresh);
+    highComp.setRatio(hiRatio);
+    highComp.setAttack(hiAttack);
+    highComp.setRelease(hiRelease);
+    highMakeup.setGainDecibels(hiMakeupGain);
+}
+
+
 void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -431,23 +534,83 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         return;
     }
 
-    float threshold = apvts.getRawParameterValue("CompThreshold")->load();
-    float ratio = apvts.getRawParameterValue("CompRatio")->load();
-    float attackMs = apvts.getRawParameterValue("CompAttack")->load();
-    float releaseMs = apvts.getRawParameterValue("CompRelease")->load();
-    float makeupDb = apvts.getRawParameterValue("CompMakeup")->load();
-
-    compressor.setThreshold(threshold); // dB
-    compressor.setRatio(ratio);
-    compressor.setAttack(attackMs);   // ms
-    compressor.setRelease(releaseMs); // ms
-
-    compressor.process(context);
-
-    if (std::abs(makeupDb) > 0.01f)
+    // ============ COMPRESSORS =============
+    juce::AudioBuffer<float> lowBuf(buffer.getNumChannels(), buffer.getNumSamples());
+    juce::AudioBuffer<float> midBuf(buffer.getNumChannels(), buffer.getNumSamples());
+    juce::AudioBuffer<float> highBuf(buffer.getNumChannels(), buffer.getNumSamples());
+    lowBuf.makeCopyOf(buffer);
+    midBuf.makeCopyOf(buffer);
+    highBuf.makeCopyOf(buffer);
+    float crossFreq1 = 250.0f;
+    float crossFreq2 = 2000.0f;
     {
-        float linearGain = juce::Decibels::decibelsToGain(makeupDb);
-        buffer.applyGain(linearGain);
+        crossover1Low_L.setCutoffFrequency(crossFreq1);
+        crossover1Low_R.setCutoffFrequency(crossFreq1);
+        crossover1High_L.setCutoffFrequency(crossFreq1);
+        crossover1High_R.setCutoffFrequency(crossFreq1);
+
+        {
+            juce::dsp::AudioBlock<float> block(lowBuf);
+            juce::dsp::ProcessContextReplacing<float> ctx(block);
+            crossover1Low_L.setType(juce::dsp::LinkwitzRileyFilterType::lowpass);
+            crossover1Low_L.process(ctx);
+        }
+        {
+            juce::dsp::AudioBlock<float> block(midBuf);
+            juce::dsp::ProcessContextReplacing<float> ctx(block);
+            crossover1High_L.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+            crossover1High_L.process(ctx);
+        }
+    }
+    {
+        crossover2Low_L.setCutoffFrequency(crossFreq2);
+        crossover2Low_R.setCutoffFrequency(crossFreq2);
+        crossover2High_L.setCutoffFrequency(crossFreq2);
+        crossover2High_R.setCutoffFrequency(crossFreq2);
+        {
+            juce::dsp::AudioBlock<float> block(midBuf);
+            juce::dsp::ProcessContextReplacing<float> ctx(block);
+            crossover2Low_L.setType(juce::dsp::LinkwitzRileyFilterType::lowpass);
+            crossover2Low_L.process(ctx);
+        }
+        {
+            juce::dsp::AudioBlock<float> block(highBuf);
+            juce::dsp::ProcessContextReplacing<float> ctx(block);
+            crossover2High_L.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+            crossover2High_L.process(ctx);
+        }
+    }
+    updateMultibandCompressorParams();
+    {
+        juce::dsp::AudioBlock<float> block(lowBuf);
+        juce::dsp::ProcessContextReplacing<float> ctx(block);
+        lowComp.process(ctx);
+        lowMakeup.process(ctx);
+    }
+    {
+        juce::dsp::AudioBlock<float> block(midBuf);
+        juce::dsp::ProcessContextReplacing<float> ctx(block);
+        midComp.process(ctx);
+        midMakeup.process(ctx);
+    }
+    {
+        juce::dsp::AudioBlock<float> block(highBuf);
+        juce::dsp::ProcessContextReplacing<float> ctx(block);
+        highComp.process(ctx);
+        highMakeup.process(ctx);
+    }
+    buffer.clear();
+    int numCh = buffer.getNumChannels();
+    int numSamples = buffer.getNumSamples();
+    for (int ch = 0; ch < numCh; ++ch) {
+        auto* out = buffer.getWritePointer(ch);
+        auto* lowp = lowBuf.getReadPointer(ch);
+        auto* midp = midBuf.getReadPointer(ch);
+        auto* hip = highBuf.getReadPointer(ch);
+
+        for (int i = 0; i < numSamples; ++i) {
+            out[i] = lowp[i] + midp[i] + hip[i];
+        }
     }
 
     auto maxThreshold = apvts.getRawParameterValue("MaxThreshold")->load();
@@ -490,7 +653,6 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     }
     auto* left = buffer.getWritePointer(0);
     auto* right = buffer.getWritePointer(1);
-    int numSamples = buffer.getNumSamples();
     for (int i = 0; i < numSamples; ++i) // mid = (L+R)*0.5, side = (L-R)*0.5
     {
         float L = left[i];

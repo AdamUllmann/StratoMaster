@@ -33,18 +33,19 @@ public:
     void resized() override;
 
 private:
-    juce::Slider thresholdSlider;
-    juce::Slider ratioSlider;
-    juce::Slider attackSlider;
-    juce::Slider releaseSlider;
-    juce::Slider makeupSlider;
-    juce::Label thresholdLabel;
-    juce::Label ratioLabel;
-    juce::Label attackLabel;
-    juce::Label releaseLabel;
-    juce::Label makeupLabel;
-    CompressorAttachments compAttachments;
+    struct BandControls {
+        juce::Slider threshold;
+        juce::Slider ratio;
+        juce::Slider attack;
+        juce::Slider release;
+        juce::Slider makeup;
+        juce::Label thresholdLabel, ratioLabel, attackLabel, releaseLabel, makeupLabel;
+    };
+    BandControls lowControls, midControls, highControls;
+    CompressorAttachments lowAttach, midAttach, highAttach;
     juce::AudioProcessorValueTreeState& apvtsRef;
+    void addBandControls(BandControls& bc, CompressorAttachments& attach, const juce::String& prefix, juce::Colour colour);
+    void layoutBand(BandControls& band, juce::Rectangle<int> area);
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CompressorComponent)
 };
 

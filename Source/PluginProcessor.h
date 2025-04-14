@@ -64,6 +64,8 @@ public:
 
     bool isAutoEQActive = false;
 
+    void StratomasterAudioProcessor::updateMultibandCompressorParams();
+
 private:
     //ugly declaration of filters for eq
     std::array<juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>, 8> peakFilters;
@@ -80,7 +82,15 @@ private:
     std::vector<float> fftMagnitudes;
     std::atomic<bool> fftDataReady{ false };
 
-    juce::dsp::Compressor<float> compressor;
+    // MULTIBAND COMPRESSOR
+    juce::dsp::LinkwitzRileyFilter<float> crossover1Low_L, crossover1Low_R;
+    juce::dsp::LinkwitzRileyFilter<float> crossover1High_L, crossover1High_R;
+    juce::dsp::LinkwitzRileyFilter<float> crossover2Low_L, crossover2Low_R;
+    juce::dsp::LinkwitzRileyFilter<float> crossover2High_L, crossover2High_R;
+
+    juce::dsp::Compressor<float> lowComp, midComp, highComp;
+    juce::dsp::Gain<float> lowMakeup, midMakeup, highMakeup;
+
     juce::dsp::Compressor<float> limiter;
 
     float currentMaximizerPeak = -100.0f;
