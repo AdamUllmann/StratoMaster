@@ -30,5 +30,4 @@ public:
         const juce::Slider::SliderStyle style, juce::Slider& slider) override;
     void drawLabel(juce::Graphics& g, juce::Label& label) override;
 
-
 };

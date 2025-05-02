@@ -379,26 +379,34 @@ void ParametricEQComponent::drawBackgroundGrid(juce::Graphics& g, juce::Rectangl
     g.setColour(juce::Colours::grey.withAlpha(0.3f));
 
     // frequency lines
-    for (auto freq : freqLines)
-    {
+    for (auto freq : freqLines) {
         float x = frequencyToX(freq);
         x = juce::jlimit<float>((float)graphArea.getX(), (float)graphArea.getRight(), x);
-        
+        g.setColour(juce::Colours::grey.withAlpha(0.9f));
         g.drawLine(x, (float)graphArea.getY(), x, (float)graphArea.getBottom());
-
-        // label
-        juce::String labelText = (freq < 1000.f)
-            ? juce::String((int)freq) + " Hz"
-            : juce::String(freq / 1000.f, 1) + " kHz";
-
+        g.setColour(juce::Colours::white.withAlpha(0.9f));
+        juce::String labelText;
+        if (freq == 20000.f)
+            labelText = "20K";
+        else if (freq < 1000.f)
+            labelText = juce::String((int)freq) + " Hz";
+        else
+            labelText = juce::String(freq / 1000.f, 1) + " kHz";
         auto fullBounds = getLocalBounds();
         auto bottomY = fullBounds.getBottom() - bottomLabelMargin / 2;
         int textWidth = 40;
         int textHeight = 14;
-        juce::Rectangle<int> textRect((int)(x - textWidth * 0.5f),
+        int textX = static_cast<int>(x - textWidth * 0.5f);
+        if (freq == 20.f)
+            textX += 6;
+        if (freq == 20000.f)
+            textX -= 6;
+        juce::Rectangle<int> textRect(textX,
             (int)(bottomY - textHeight * 0.5f),
             textWidth, textHeight);
+        juce::Font labelFont("Verdana", 11.0f, juce::Font::bold);
 
+        g.setFont(labelFont);
         g.setColour(juce::Colours::white.withAlpha(0.9f));
         g.drawFittedText(labelText, textRect, juce::Justification::centred, 1);
     }
@@ -415,13 +423,18 @@ void ParametricEQComponent::drawBackgroundGrid(juce::Graphics& g, juce::Rectangl
         auto fullBounds = getLocalBounds();
         int textWidth = 35;
         int textHeight = 14;
+        int yOffset = (dB == -12.f) ? -4 : 0;
         juce::Rectangle<int> textRect(
-            fullBounds.getX(), 
-            (int)(y - textHeight * 0.5f),
+            fullBounds.getX(),
+            (int)(y - textHeight * 0.5f + yOffset),
             leftLabelMargin - 4,
             textHeight);
 
         juce::String labelText = juce::String((int)dB) + " dB";
+        g.setColour(juce::Colours::white.withAlpha(0.9f));
+        juce::Font labelFont("Verdana", 11.0f, juce::Font::bold);
+
+        g.setFont(labelFont);
         g.setColour(juce::Colours::white.withAlpha(0.9f));
         g.drawFittedText(labelText, textRect, juce::Justification::centredRight, 1);
     }
