@@ -9,6 +9,34 @@
 */
 #include "CustomLookAndFeel.h"
 
+void CustomLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
+{
+    if (auto* parent = label.getParentComponent()) {
+        if (auto* slider = dynamic_cast<juce::Slider*>(parent)) {
+            auto bounds = label.getLocalBounds().toFloat();
+            juce::Colour background = juce::Colour(20, 20, 25);
+            juce::Colour border = juce::Colour(60, 80, 100);
+            juce::Colour textc = juce::Colour(150, 180, 200);
+            g.setColour(background);
+            g.fillRoundedRectangle(bounds.reduced(1.0f), 4.0f);
+            g.setColour(border.withAlpha(0.6f));
+            g.drawRoundedRectangle(bounds.reduced(1.0f), 4.0f, 1.3f);
+            g.setColour(textc);
+            juce::Font font("Consolas", label.getFont().getHeight() * 0.8, juce::Font::plain);
+            g.setFont(font);
+            juce::String text = label.getText()
+                .retainCharacters("0123456789.-")
+                .substring(0, 5);
+            if (text.endsWithChar('.'))
+                text = text.dropLastCharacters(1);
+            auto paddedBounds = label.getLocalBounds().reduced(4, 0);
+            g.drawText(text, paddedBounds, juce::Justification::centred, false);
+            return;
+        }
+    }
+    juce::LookAndFeel_V4::drawLabel(g, label);
+}
+
 void CustomLookAndFeel::drawRotarySlider(juce::Graphics& g,
     int x, int y, int width, int height,
     float sliderPosProportional,
