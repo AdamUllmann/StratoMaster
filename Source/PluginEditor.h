@@ -33,6 +33,7 @@ private:
     juce::Label stratomasterLogo;
 
     juce::TextButton autoEQButton { "Auto EQ" };
+    juce::Label autoMasterStatusLabel;
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessorEditor)

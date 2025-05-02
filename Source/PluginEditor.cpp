@@ -37,6 +37,14 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     };
     addAndMakeVisible(autoEQButton);
 
+    autoMasterStatusLabel.setText("--", juce::dontSendNotification);
+    autoMasterStatusLabel.setFont(juce::Font("Consolas", 16.0f, juce::Font::bold));
+    autoMasterStatusLabel.setJustificationType(juce::Justification::centred);
+    autoMasterStatusLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    autoMasterStatusLabel.setColour(juce::Label::backgroundColourId, juce::Colour(30, 30, 30));
+    addAndMakeVisible(autoMasterStatusLabel);
+    autoMasterStatusLabel.setName("StatusLabel");
+
     setResizable(true, true);
     setResizeLimits(600, 400, 2000, 1400);
     setSize(1000, 500);
@@ -48,6 +56,10 @@ void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadc
         if (!audioProcessor.isAutoEQActive) {
             autoEQButton.setToggleState(false, juce::NotificationType::dontSendNotification);
             autoEQButton.setButtonText("Auto Master");
+            autoMasterStatusLabel.setText("--", juce::dontSendNotification);
+        }
+        else {
+            autoMasterStatusLabel.setText("Equalizing", juce::dontSendNotification);
         }
     }
 }
@@ -59,10 +71,10 @@ StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
 
 void StratomasterAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    juce::ColourGradient gradient(juce::Colour(50, 50, 50), 0, 0, juce::Colour(50, 50, 50), getWidth(), 0, false);
-    gradient.addColour(0.2, juce::Colour(70, 70, 70));
-    gradient.addColour(0.5, juce::Colour(90, 90, 90));
-    gradient.addColour(0.8, juce::Colour(70, 70, 70));
+    juce::ColourGradient gradient(juce::Colour(10, 10, 10), 0, 0, juce::Colour(10, 10, 10), getWidth(), 0, false);
+    gradient.addColour(0.2, juce::Colour(30, 30, 30));
+    gradient.addColour(0.5, juce::Colour(50, 50, 50));
+    gradient.addColour(0.8, juce::Colour(30, 30, 30));
     g.setGradientFill(gradient);
     g.fillAll();
 }
@@ -77,4 +89,6 @@ void StratomasterAudioProcessorEditor::resized()
     stratomasterLogo.setBounds (topBar.getRight() - logoWidth - offsetFromRight, topBar.getY(), logoWidth, topBarHeight);
     int buttonWidth = 120;
     autoEQButton.setBounds (stratomasterLogo.getX() - (buttonWidth + 10), topBar.getY(), buttonWidth, topBarHeight);
+    int labelWidth = 180;
+    autoMasterStatusLabel.setBounds(topBar.getCentreX() - labelWidth / 2, topBar.getY(), labelWidth, topBarHeight);
 }
