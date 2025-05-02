@@ -20,9 +20,14 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
     {
         // --- frequency knobs ---
         freqSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        freqSliders[i].setTextBoxStyle(juce::Slider::NoTextBox, false, 50, 20);
+        freqSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+        freqSliders[i].setNumDecimalPlacesToDisplay(1);
         addAndMakeVisible(freqSliders[i]);
         freqSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
+        freqSliders[i].onValueChange = [this, i]() {
+            freqSliders[i].setTextValueSuffix(freqSliders[i].getValue() >= 1000.0f ? " kHz" : " Hz");
+            };
+        freqSliders[i].setTextValueSuffix(" Hz"); // fallback suffix
 
         auto freqParamID = "Band" + juce::String(i + 1) + "Freq";
         bandAttachments[i].freqAttachment.reset(
@@ -58,7 +63,8 @@ ParametricEQComponent::ParametricEQComponent(StratomasterAudioProcessor& p)
 
         // --- Q knobs ---
         qSliders[i].setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        qSliders[i].setTextBoxStyle(juce::Slider::NoTextBox, false, 50, 20);
+        qSliders[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+        qSliders[i].setNumDecimalPlacesToDisplay(2);
         addAndMakeVisible(qSliders[i]);
         qSliders[i].setColour(juce::Slider::rotarySliderFillColourId, bandColours[i]);
 
@@ -193,41 +199,35 @@ void ParametricEQComponent::drawSpectrum(juce::Graphics& g, juce::Rectangle<int>
     g.fillPath(spectrumPath);
 }
 
-void ParametricEQComponent::resized() 
+void ParametricEQComponent::resized()
 {
     auto bounds = getLocalBounds();
     auto controlArea = bounds.removeFromRight(300);
     updateHandlePositions();
     const int columnWidth = controlArea.getWidth() / numBands;
     const int columnHeight = controlArea.getHeight();
+    constexpr int rowSpacer = 18;
+    constexpr int labelHeight = 20;
+    constexpr int knobHeight = 40;
+    constexpr int textBoxHeight = 20;
+    constexpr int filterBoxHeight = 20;
     for (int i = 0; i < numBands; ++i) {
         auto column = controlArea.removeFromLeft(columnWidth);
-        auto sliderHeight = static_cast<int>(columnHeight * 0.5f);
-        auto knobHeight = static_cast<int>(columnHeight * 0.25f);
-        {
-            auto gainArea = column.removeFromTop(sliderHeight);
-            gainSliders[i].setBounds(gainArea);  // leftover
-        }
-        {
-            auto freqArea = column.removeFromTop(knobHeight);
-            int labelHeight = 40;
-            auto freqLabelArea = freqArea.removeFromTop(labelHeight);
-            freqLabels[i].setBounds(freqLabelArea.withTrimmedTop(2));
-            freqSliders[i].setBounds(freqArea);
-        }
-        {
-            auto qArea = column;
-            int labelHeight = 40;
-            auto qLabelArea = qArea.removeFromTop(labelHeight);
-            qLabels[i].setBounds(qLabelArea.withTrimmedTop(2));
-            qSliders[i].setBounds(qArea);
-        }
-        {
-            auto filterBoxHeight = 20;
-            auto filterBoxArea = column.removeFromBottom(filterBoxHeight);
-
-            filterTypeBoxes[i].setBounds(filterBoxArea);
-        }
+        int gainHeight = static_cast<int>(columnHeight * 0.5f);
+        auto gainArea = column.removeFromTop(gainHeight);
+        gainSliders[i].setBounds(gainArea);
+        column.removeFromTop(rowSpacer);
+        auto freqLabelArea = column.removeFromTop(labelHeight);
+        freqLabels[i].setBounds(freqLabelArea.withTrimmedTop(2));
+        auto freqKnobArea = column.removeFromTop(knobHeight + textBoxHeight);
+        freqSliders[i].setBounds(freqKnobArea);
+        column.removeFromTop(rowSpacer);
+        auto qLabelArea = column.removeFromTop(labelHeight);
+        qLabels[i].setBounds(qLabelArea.withTrimmedTop(2));
+        auto qKnobArea = column.removeFromTop(knobHeight + textBoxHeight);
+        qSliders[i].setBounds(qKnobArea);
+        auto filterBoxArea = column.removeFromBottom(filterBoxHeight);
+        filterTypeBoxes[i].setBounds(filterBoxArea);
     }
 }
 
