@@ -1,4 +1,4 @@
-/*
+﻿/*
   ==============================================================================
 
     CustomLookAndFeel.cpp
@@ -8,6 +8,72 @@
   ==============================================================================
 */
 #include "CustomLookAndFeel.h"
+
+void CustomLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
+    const juce::Colour& backgroundColour,
+    bool isMouseOverButton, bool isButtonDown)
+{
+    auto bounds = button.getLocalBounds().toFloat().reduced(1.0f);
+    float cornerSize = 6.0f;
+    juce::Colour base = isButtonDown ? juce::Colour(120, 20, 20) :
+        isMouseOverButton ? juce::Colour(80, 80, 80) :
+        juce::Colour(40, 40, 40);
+    juce::Colour edge = juce::Colour(20, 20, 20);
+    juce::ColourGradient grad(base, bounds.getX(), bounds.getY(),
+        edge, bounds.getBottomLeft().getX(), bounds.getBottomLeft().getY(), false);
+    g.setGradientFill(grad);
+    g.fillRoundedRectangle(bounds, cornerSize);
+    if (button.getToggleState()) {
+        g.setColour(juce::Colours::black.withAlpha(0.5f));
+        g.drawRoundedRectangle(bounds, cornerSize, 1.5f);
+    }
+    else {
+        g.setColour(juce::Colours::white.withAlpha(0.1f));
+        g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+    }
+}
+
+void CustomLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& button,
+    bool isMouseOverButton, bool isButtonDown)
+{
+    auto font = juce::Font("Arial Black", 16.0f, juce::Font::bold);
+    g.setFont(font);
+    juce::Colour textColour = button.getToggleState() ? juce::Colours::red.brighter() :
+        isMouseOverButton ? juce::Colours::white :
+        juce::Colours::lightgrey;
+    g.setColour(textColour);
+    auto bounds = button.getLocalBounds().reduced(6);
+    g.drawFittedText(button.getButtonText(), bounds, juce::Justification::centred, 1);
+}
+
+
+void CustomLookAndFeel::drawTabButton(juce::TabBarButton& button, juce::Graphics& g,
+    bool isMouseOver, bool isMouseDown)
+{
+    auto bounds = button.getLocalBounds().toFloat();
+    bool isActive = button.isFrontTab();
+    juce::Colour base = juce::Colour(25, 25, 25);
+    juce::Colour edge = juce::Colour(15, 15, 15);
+    if (!isActive)
+    {
+        juce::DropShadow shadow(juce::Colours::black.withAlpha(0.6f), 6, { 0, 2 });
+        shadow.drawForRectangle(g, bounds.toNearestInt());
+    }
+    juce::Path tabShape;
+    float corner = 6.0f;
+    tabShape.addRoundedRectangle(bounds, corner);
+    juce::ColourGradient grad(base, bounds.getX(), bounds.getY(),
+        edge, bounds.getBottomLeft().getX(), bounds.getBottomLeft().getY(), false);
+    g.setGradientFill(grad);
+    g.fillPath(tabShape);
+    g.setColour(juce::Colours::black.withAlpha(0.6f));
+    g.strokePath(tabShape, juce::PathStrokeType(1.0f));
+    juce::Font font("Verdana", 12.0f, isActive ? juce::Font::bold : juce::Font::plain);
+    g.setFont(font);
+    g.setColour(isActive ? juce::Colours::white : juce::Colours::lightgrey);
+    g.drawText(button.getButtonText(), bounds.reduced(6), juce::Justification::centred);
+}
+
 
 void CustomLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
 {

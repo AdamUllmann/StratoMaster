@@ -29,5 +29,12 @@ public:
         float sliderPos, float minSliderPos, float maxSliderPos,
         const juce::Slider::SliderStyle style, juce::Slider& slider) override;
     void drawLabel(juce::Graphics& g, juce::Label& label) override;
+    void drawTabButton(juce::TabBarButton& button, juce::Graphics& g, bool isMouseOver, bool isMouseDown) override;
+    int getTabButtonOverlap(int) override { return -1; }
+    void drawButtonBackground(juce::Graphics& g, juce::Button& button,
+        const juce::Colour& backgroundColour,
+        bool isMouseOverButton, bool isButtonDown) override;
 
+    void drawButtonText(juce::Graphics& g, juce::TextButton& button,
+        bool isMouseOverButton, bool isButtonDown) override;
 };

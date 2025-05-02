@@ -20,7 +20,7 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     audioProcessor.addChangeListener(this);
 
     autoEQButton.setClickingTogglesState(true);
-    autoEQButton.setButtonText("Auto EQ");
+    autoEQButton.setButtonText("Auto Master");
     autoEQButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey.brighter());
     autoEQButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     autoEQButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::darkred.withAlpha(0.8f));
@@ -31,7 +31,7 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
             audioProcessor.startAutoEQ();
         }
         else {
-            autoEQButton.setButtonText("Auto EQ");
+            autoEQButton.setButtonText("Auto Master");
             audioProcessor.stopAutoEQ();
         }
     };
@@ -47,7 +47,7 @@ void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadc
     if (source == &audioProcessor) {
         if (!audioProcessor.isAutoEQActive) {
             autoEQButton.setToggleState(false, juce::NotificationType::dontSendNotification);
-            autoEQButton.setButtonText("Auto EQ");
+            autoEQButton.setButtonText("Auto Master");
         }
     }
 }
