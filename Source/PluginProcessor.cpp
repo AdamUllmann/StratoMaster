@@ -295,6 +295,7 @@ bool StratomasterAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
 void StratomasterAudioProcessor::startAutoEQ() {
     isAutoEQActive = true;
     blocksCloseToTarget = 0;
+    autoEQStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     static const std::array<float, 8> defaultFreqs{ 50.f, 100.f, 200.f, 500.f, 1000.f, 2000.f, 5000.f, 10000.f };
     for (int i = 0; i < 8; i++) {
         {
@@ -716,7 +717,11 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
             fftDataReady.store(true);
 
             // ========= AUTO EQ LOGIC =============
-            if (isAutoEQActive) {
+            double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
+            if (now - autoEQStartTime >= autoEQDuration) {
+                stopAutoEQ();
+            }
+            else {
                 doAutoEQFromFFT();
             }
         }

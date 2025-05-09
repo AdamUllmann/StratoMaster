@@ -127,6 +127,9 @@ private:
         0.0f   // ~ 10 kHz
     };
 
+    double autoEQStartTime = 0.0;
+    static constexpr double autoEQDuration = 6.0;
+
     int blocksCloseToTarget = 0;
     static constexpr int freezeThresholdBlocks = 240;
     static constexpr int diffHistorySize = 64;
