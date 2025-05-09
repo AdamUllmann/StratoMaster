@@ -152,7 +152,7 @@ void ParametricEQComponent::paint(juce::Graphics& g) {
     drawEQCurve(g, graphArea);
     if (hoveredHandleIndex >= 0) {
         drawSingleBandCurve(g, graphArea, hoveredHandleIndex);
-    }
+        }
 
     drawHandles(g);
 }
@@ -451,7 +451,7 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
         sr = 44100.0;
     juce::Path eqPath;
     bool firstPoint = true;
-    constexpr int numPoints = 128;
+    constexpr int numPoints = 256;
     // log-spaced frequencies
     for (int i = 0; i < numPoints; ++i)
     {
@@ -580,7 +580,7 @@ void ParametricEQComponent::drawSingleBandCurve(juce::Graphics& g, juce::Rectang
     if (sr <= 0.0)  sr = 44100.0;
     juce::Path bandPath;
     bool firstP = true;
-    constexpr int numPoints = 128;
+    constexpr int numPoints = 256;
     for (int i = 0; i < numPoints; ++i) {
         float freq = 20.0f * std::pow(10.0f, (float)i * (std::log10(20000.0f / 20.0f) / (numPoints - 1)));
         auto prefix = "Band" + juce::String(bandIndex + 1);
