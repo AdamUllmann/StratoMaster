@@ -341,10 +341,17 @@ void StratomasterAudioProcessor::startAutoEQ() {
     sendChangeMessage();
 }
 
-void StratomasterAudioProcessor::stopAutoEQ() {
+void StratomasterAudioProcessor::stopAutoEQ()
+{
     isAutoEQActive = false;
-    blocksCloseToTarget = 0; // reset
+    blocksCloseToTarget = 0;
     sendChangeMessage();
+
+    if (queueAutoMaxAfterEQ)
+    {
+        queueAutoMaxAfterEQ = false;
+        startAutoMaximize();
+    }
 }
 
 void StratomasterAudioProcessor::doAutoEQFromFFT() {
@@ -427,6 +434,71 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
         stopAutoEQ();
         return;
     }
+}
+
+void StratomasterAudioProcessor::startAutoMaximize() {
+    isAutoEQActive = false;
+    isAutoMaxActive = true;
+    if (auto* ceilParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("MaxCeiling")))
+        ceilParam->setValueNotifyingHost(ceilParam->getNormalisableRange().convertTo0to1(-1.0f));
+    if (auto* relParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("MaxRelease")))
+        relParam->setValueNotifyingHost(relParam->getNormalisableRange().convertTo0to1(30.0f));
+    autoMaxStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    sendChangeMessage();
+}
+
+void StratomasterAudioProcessor::stopAutoMaximize() {
+    isAutoMaxActive = false;
+    sendChangeMessage();
+}
+
+void StratomasterAudioProcessor::doAutoMaximizeFromPeaks() {
+    if (++controlFrameCount < framesPerUpdate)
+        return;
+    controlFrameCount = 0;
+    float preL = currentPreGainPeakLeft;
+    float preR = currentPreGainPeakRight;
+    float prePeakDb = std::max(preL, preR);
+    float thresholdDb = apvts.getRawParameterValue("MaxThreshold")->load();
+    float postMakeupDb = prePeakDb - thresholdDb;
+
+    peakSmoothedDb = smoothingAlpha * postMakeupDb
+        + (1.0f - smoothingAlpha) * peakSmoothedDb;
+
+    float ceilingDb = apvts.getRawParameterValue("MaxCeiling")->load();
+    float targetDb = ceilingDb - maximizerMarginDb;
+
+    float error = targetDb - peakSmoothedDb;
+    if (std::fabs(error) < deadbandDb)
+    {
+        if (++stableFrameCount >= stableFramesNeeded)
+            stopAutoMaximize();
+        return;
+    }
+    stableFrameCount = 0;
+    float newThresholdDb = thresholdDb;
+    if (error > deadbandDb)
+        newThresholdDb = thresholdDb - stepDb;
+    else if (error < -deadbandDb)
+        newThresholdDb = thresholdDb + stepDb;
+    newThresholdDb = juce::jlimit(thresholdMinDb,
+        thresholdMaxDb,
+        newThresholdDb);
+    if (auto* th = dynamic_cast<juce::AudioParameterFloat*>(
+        apvts.getParameter("MaxThreshold")))
+    {
+        th->beginChangeGesture();
+        th->setValueNotifyingHost(
+            th->getNormalisableRange().convertTo0to1(newThresholdDb));
+        th->endChangeGesture();
+    }
+}
+
+void StratomasterAudioProcessor::startAutoMaster()
+{
+    // queue the maximize pass, then start EQ
+    queueAutoMaxAfterEQ = true;
+    startAutoEQ();
 }
 
 void StratomasterAudioProcessor::updateMultibandCompressorParams()
@@ -775,6 +847,14 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
             }
             else {
                 doAutoEQFromFFT();
+            }
+            double now1 = juce::Time::getMillisecondCounterHiRes() * 0.001;
+            if (isAutoMaxActive)
+            {
+                if (now1 - autoMaxStartTime >= autoMaxDuration)
+                    stopAutoMaximize();
+                else
+                    doAutoMaximizeFromPeaks();
             }
         }
         else

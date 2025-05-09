@@ -24,17 +24,25 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     autoEQButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey.brighter());
     autoEQButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     autoEQButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::darkred.withAlpha(0.8f));
-    autoEQButton.onClick = [this]() {
-        bool isOn = autoEQButton.getToggleState();
-        if (isOn) {
-            autoEQButton.setButtonText("Stop");
-            audioProcessor.startAutoEQ();
-        }
-        else {
-            autoEQButton.setButtonText("Auto Master");
-            audioProcessor.stopAutoEQ();
-        }
-    };
+    autoEQButton.onClick = [this]()
+        {
+            bool goingOn = autoEQButton.getToggleState();
+
+            if (goingOn)
+            {
+                autoEQButton.setButtonText("Stop");
+                audioProcessor.startAutoMaster();
+                startTimerHz(10);
+            }
+            else
+            {
+                autoEQButton.setButtonText("Auto Master");
+                audioProcessor.stopAutoEQ();
+                audioProcessor.stopAutoMaximize();
+                stopTimer();
+                autoMasterStatusLabel.setText("--", juce::dontSendNotification);
+            }
+        };
     addAndMakeVisible(autoEQButton);
 
     autoMasterStatusLabel.setText("--", juce::dontSendNotification);
@@ -56,10 +64,13 @@ void StratomasterAudioProcessorEditor::timerCallback()
 {
     if (audioProcessor.isAutoEQActive)
     {
-        char c = spinnerChars[spinnerIndex % 4];
-        spinnerIndex++;
-        autoMasterStatusLabel.setText(juce::String::charToString(c) + " Equalizing",
-            juce::dontSendNotification);
+        char c = spinnerChars[spinnerIndex++ % 4];
+        autoMasterStatusLabel.setText(juce::String::charToString(c) + " Equalizing", juce::dontSendNotification);
+    }
+    else if (audioProcessor.isAutoMaxActive)
+    {
+        char c = spinnerChars[spinnerIndex++ % 4];
+        autoMasterStatusLabel.setText(juce::String::charToString(c) + " Maximizing", juce::dontSendNotification);
     }
 }
 
@@ -67,23 +78,19 @@ void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadc
 {
     if (source == &audioProcessor)
     {
-        if (!audioProcessor.isAutoEQActive)
+        if (!audioProcessor.isAutoEQActive && !audioProcessor.isAutoMaxActive)
         {
             autoEQButton.setToggleState(false, juce::dontSendNotification);
             autoEQButton.setButtonText("Auto Master");
             stopTimer();
             autoMasterStatusLabel.setText("--", juce::dontSendNotification);
         }
-        else
-        {
-            spinnerIndex = 0;
-            startTimerHz(10);
-        }
     }
 }
 
 StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
 {
+    stopTimer();
     setLookAndFeel(nullptr);
 }
 

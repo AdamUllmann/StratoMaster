@@ -69,6 +69,14 @@ public:
 
     bool isAutoEQActive = false;
 
+    void startAutoMaximize();
+    void stopAutoMaximize();
+    void doAutoMaximizeFromPeaks();
+
+    bool isAutoMaxActive = false;
+
+    void startAutoMaster();
+
     void StratomasterAudioProcessor::updateMultibandCompressorParams();
 
 private:
@@ -135,6 +143,24 @@ private:
 
     double autoEQStartTime = 0.0;
     static constexpr double autoEQDuration = 6.0;
+
+    double autoMaxStartTime = 0.0;
+    static constexpr double autoMaxDuration = 6.0;
+
+    bool queueAutoMaxAfterEQ = false;
+
+    float peakSmoothedDb = -100.0f;
+    int   controlFrameCount = 0;
+    static constexpr int   framesPerUpdate = 1;
+    static constexpr float smoothingAlpha = 0.15f;
+
+    static constexpr float deadbandDb = 0.5f;
+    static constexpr float stepDb = 0.2f;
+    static constexpr int   stableFramesNeeded = 6;
+    int   stableFrameCount = 0;
+    static constexpr float maximizerMarginDb = 1.0f;
+    static constexpr float thresholdMinDb = -20.0f;
+    static constexpr float thresholdMaxDb = 0.0f;
 
     int blocksCloseToTarget = 0;
     static constexpr int freezeThresholdBlocks = 240;
