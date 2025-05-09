@@ -71,10 +71,10 @@ StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
 
 void StratomasterAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    juce::ColourGradient gradient(juce::Colour(10, 10, 10), 0, 0, juce::Colour(10, 10, 10), getWidth(), 0, false);
-    gradient.addColour(0.2, juce::Colour(30, 30, 30));
-    gradient.addColour(0.5, juce::Colour(50, 50, 50));
-    gradient.addColour(0.8, juce::Colour(30, 30, 30));
+    juce::ColourGradient gradient(juce::Colour(30, 30, 30), 0, 0, juce::Colour(30, 30, 30), getWidth(), 0, false);
+    gradient.addColour(0.2, juce::Colour(50, 50, 50));
+    gradient.addColour(0.5, juce::Colour(70, 70, 70));
+    gradient.addColour(0.8, juce::Colour(50, 50, 50));
     g.setGradientFill(gradient);
     g.fillAll();
 }
