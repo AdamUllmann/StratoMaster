@@ -626,16 +626,16 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         }
     }
 
-    auto maxThreshold = apvts.getRawParameterValue("MaxThreshold")->load();
-    auto maxCeiling = apvts.getRawParameterValue("MaxCeiling")->load();
-    auto maxReleaseMs = apvts.getRawParameterValue("MaxRelease")->load();
-
+    float thresholdDb = apvts.getRawParameterValue("MaxThreshold")->load();
+    float ceilingDb = apvts.getRawParameterValue("MaxCeiling")->load();
+    float maxRelease = apvts.getRawParameterValue("MaxRelease")->load();
+    auto nSamps = buffer.getNumSamples();
+    float maxPreL = 0.0f;
+    float maxPreR = 0.0f;
     float preDb = apvts.getRawParameterValue("PreGain")->load();
     float preLin = juce::Decibels::decibelsToGain(preDb);
     buffer.applyGain(preLin);
 
-    float maxPreL = 0.0f, maxPreR = 0.0f;
-    auto nSamps = buffer.getNumSamples();
     if (buffer.getNumChannels() > 0)
         for (int i = 0; i < nSamps; ++i)
             maxPreL = std::max(maxPreL, std::fabs(buffer.getReadPointer(0)[i]));
@@ -646,11 +646,21 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     currentPreGainPeakLeft = (maxPreL > 1e-6f) ? juce::Decibels::gainToDecibels(maxPreL) : -100.0f;
     currentPreGainPeakRight = (maxPreR > 1e-6f) ? juce::Decibels::gainToDecibels(maxPreR) : -100.0f;
 
-    limiter.setThreshold(maxThreshold);
+    float makeupLin = juce::Decibels::decibelsToGain(-thresholdDb); // iZotope loudness boost
+    buffer.applyGain(makeupLin);
+    limiter.setThreshold(ceilingDb);
     limiter.setRatio(100.0f);
     limiter.setAttack(1.0f);
-    limiter.setRelease(maxReleaseMs);
+    limiter.setRelease(maxRelease);
     limiter.process(context);
+
+    float linCeil = juce::Decibels::decibelsToGain(ceilingDb);
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* data = buffer.getWritePointer(ch);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            data[i] = juce::jlimit(-linCeil, linCeil, data[i]);
+    }
 
     float postDb = apvts.getRawParameterValue("PostGain")->load();
     float postLin = juce::Decibels::decibelsToGain(postDb);
@@ -667,7 +677,7 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     currentPostGainPeakLeft = (maxPostL > 1e-6f) ? juce::Decibels::gainToDecibels(maxPostL) : -100.0f;
     currentPostGainPeakRight = (maxPostR > 1e-6f) ? juce::Decibels::gainToDecibels(maxPostR) : -100.0f;
 
-    float linearCeiling = juce::Decibels::decibelsToGain(maxCeiling);
+    float linearCeiling = juce::Decibels::decibelsToGain(ceilingDb);
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
     {
         auto* bufData = buffer.getWritePointer(ch);
