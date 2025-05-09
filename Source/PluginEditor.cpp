@@ -91,6 +91,7 @@ void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadc
 StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
 {
     stopTimer();
+    audioProcessor.removeChangeListener(this);
     setLookAndFeel(nullptr);
 }
 
