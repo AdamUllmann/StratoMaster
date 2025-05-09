@@ -137,8 +137,7 @@ void ParametricEQComponent::timerCallback()
 }
 
 //==============================================================================
-void ParametricEQComponent::paint(juce::Graphics& g)
-{
+void ParametricEQComponent::paint(juce::Graphics& g) {
     auto graphArea = getGraphBounds();
     juce::ColourGradient gradient(juce::Colour(40, 40, 40), 0, 0, juce::Colour(40, 40, 40), getWidth(), 0, false);
     gradient.addColour(0.2, juce::Colour(60, 60, 60));
@@ -151,6 +150,10 @@ void ParametricEQComponent::paint(juce::Graphics& g)
     drawSpectrum(g, graphArea);
     drawBackgroundGrid(g, graphArea);
     drawEQCurve(g, graphArea);
+    if (hoveredHandleIndex >= 0) {
+        drawSingleBandCurve(g, graphArea, hoveredHandleIndex);
+    }
+
     drawHandles(g);
 }
 
@@ -539,8 +542,81 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
     g.strokePath(eqPath, juce::PathStrokeType(2.0f));
 }
 
-void ParametricEQComponent::drawHandles(juce::Graphics& g)
-{
+void ParametricEQComponent::mouseMove(const juce::MouseEvent& event) {
+    auto graphArea = getGraphBounds();
+    auto pos = event.getPosition().toFloat();
+    if (!graphArea.contains(event.getPosition())) {
+        if (hoveredHandleIndex >= 0) {
+            hoveredHandleIndex = -1;
+            repaint();
+        }
+        return;
+    }
+    constexpr float handleRadius = 8.0f;
+    int newHover = -1;
+    for (int i = 0; i < numBands; ++i) {
+        if (pos.getDistanceFrom(bandHandles[i].centre) <= handleRadius) {
+            newHover = i;
+            break;
+        }
+    }
+    if (newHover != hoveredHandleIndex) {
+        hoveredHandleIndex = newHover;
+        repaint();
+    }
+}
+
+void ParametricEQComponent::mouseExit(const juce::MouseEvent&) {
+    if (hoveredHandleIndex >= 0) {
+        hoveredHandleIndex = -1;
+        repaint();
+    }
+}
+
+void ParametricEQComponent::drawSingleBandCurve(juce::Graphics& g, juce::Rectangle<int> graphArea, int bandIndex) {
+    if (bandIndex < 0 || bandIndex >= numBands)
+        return;
+    double sr = audioProcessor.getSampleRate();
+    if (sr <= 0.0)  sr = 44100.0;
+    juce::Path bandPath;
+    bool firstP = true;
+    constexpr int numPoints = 128;
+    for (int i = 0; i < numPoints; ++i) {
+        float freq = 20.0f * std::pow(10.0f, (float)i * (std::log10(20000.0f / 20.0f) / (numPoints - 1)));
+        auto prefix = "Band" + juce::String(bandIndex + 1);
+        float bFreq = audioProcessor.apvts.getRawParameterValue(prefix + "Freq")->load();
+        float bGain = audioProcessor.apvts.getRawParameterValue(prefix + "Gain")->load();
+        float bQ = audioProcessor.apvts.getRawParameterValue(prefix + "Q")->load();
+        int   type = (int)*audioProcessor.apvts.getRawParameterValue(prefix + "FilterType");
+        juce::dsp::IIR::Coefficients<double>::Ptr coeffs;
+        switch (type) {
+        case 0: coeffs = juce::dsp::IIR::Coefficients<double>::makeLowPass(sr, bFreq, bQ);        break;
+        case 1: coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(sr, bFreq, bQ, juce::Decibels::decibelsToGain(bGain)); break;
+        case 2: coeffs = juce::dsp::IIR::Coefficients<double>::makeHighPass(sr, bFreq, bQ);        break;
+        case 3: coeffs = juce::dsp::IIR::Coefficients<double>::makeLowShelf(sr, bFreq, bQ, juce::Decibels::decibelsToGain(bGain)); break;
+        case 4: coeffs = juce::dsp::IIR::Coefficients<double>::makeHighShelf(sr, bFreq, bQ, juce::Decibels::decibelsToGain(bGain)); break;
+        default: coeffs = juce::dsp::IIR::Coefficients<double>::makePeakFilter(sr, bFreq, bQ, juce::Decibels::decibelsToGain(bGain)); break;
+        }
+        double magLin = coeffs->getMagnitudeForFrequency(freq, sr);
+        double magDb = juce::Decibels::gainToDecibels((float)magLin);
+        float x = frequencyToX(freq);
+        x = juce::jlimit<float>((float)graphArea.getX(), (float)graphArea.getRight(), x);
+        float y = gainToY((float)magDb);
+        y = juce::jlimit<float>((float)graphArea.getY(), (float)graphArea.getBottom(), y);
+        if (firstP) {
+            bandPath.startNewSubPath(x, y);
+            firstP = false;
+        }
+        else {
+            bandPath.lineTo(x, y);
+        }
+    }
+    g.setColour(bandColours[bandIndex].withAlpha(0.8f));
+    g.strokePath(bandPath, juce::PathStrokeType(2.0f));
+}
+
+
+void ParametricEQComponent::drawHandles(juce::Graphics& g) {
     const float radius = 8.0f;
     g.setFont(juce::Font(14.0f, juce::Font::bold));
     for (int i = 0; i < numBands; ++i)

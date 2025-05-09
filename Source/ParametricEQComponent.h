@@ -71,10 +71,15 @@ private:
     float gainToY(float gainDB) const;
     float yToGain(float y) const;
 
+    int hoveredHandleIndex = -1;
+    void mouseMove(const juce::MouseEvent&) override;
+    void mouseExit(const juce::MouseEvent&) override;
+
     void drawBackgroundGrid(juce::Graphics& g, juce::Rectangle<int> r);
     void drawEQCurve(juce::Graphics& g, juce::Rectangle<int> r);
     void drawHandles(juce::Graphics& g);
     void drawSpectrum(juce::Graphics& g, juce::Rectangle<int> graphArea);
+    void drawSingleBandCurve(juce::Graphics& g, juce::Rectangle<int> graphArea, int bandIndex);
 
     juce::StringArray getAllParamIDs() const;
 
