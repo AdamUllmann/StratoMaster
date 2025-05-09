@@ -45,21 +45,39 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     addAndMakeVisible(autoMasterStatusLabel);
     autoMasterStatusLabel.setName("StatusLabel");
 
+    stopTimer();
+
     setResizable(true, true);
     setResizeLimits(600, 400, 2000, 1400);
     setSize(1000, 500);
 }
 
+void StratomasterAudioProcessorEditor::timerCallback()
+{
+    if (audioProcessor.isAutoEQActive)
+    {
+        char c = spinnerChars[spinnerIndex % 4];
+        spinnerIndex++;
+        autoMasterStatusLabel.setText(juce::String::charToString(c) + " Equalizing",
+            juce::dontSendNotification);
+    }
+}
+
 void StratomasterAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
-    if (source == &audioProcessor) {
-        if (!audioProcessor.isAutoEQActive) {
-            autoEQButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+    if (source == &audioProcessor)
+    {
+        if (!audioProcessor.isAutoEQActive)
+        {
+            autoEQButton.setToggleState(false, juce::dontSendNotification);
             autoEQButton.setButtonText("Auto Master");
+            stopTimer();
             autoMasterStatusLabel.setText("--", juce::dontSendNotification);
         }
-        else {
-            autoMasterStatusLabel.setText("Equalizing", juce::dontSendNotification);
+        else
+        {
+            spinnerIndex = 0;
+            startTimerHz(10);
         }
     }
 }

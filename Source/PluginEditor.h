@@ -9,7 +9,7 @@
 #include "ImagerComponent.h"
 
 //==============================================================================
-class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::ChangeListener
+class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::ChangeListener, private juce::Timer
 {
 public:
     StratomasterAudioProcessorEditor(StratomasterAudioProcessor&);
@@ -34,6 +34,11 @@ private:
 
     juce::TextButton autoEQButton { "Auto EQ" };
     juce::Label autoMasterStatusLabel;
+
+    int spinnerIndex = 0;
+    const char* spinnerChars = "|/-\\";
+    void timerCallback() override;
+
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessorEditor)
