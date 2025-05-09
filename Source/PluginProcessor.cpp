@@ -634,16 +634,29 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
         }
     }
 
-    float maxAmp = 0.0f;
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    float maxAmpL = 0.0f, maxAmpR = 0.0f;
+    int   nSamps = buffer.getNumSamples();
+
+    if (buffer.getNumChannels() > 0)
     {
-        auto* readPtr = buffer.getReadPointer(ch);
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
-            maxAmp = std::max(maxAmp, std::fabs(readPtr[i]));
+        auto* rL = buffer.getReadPointer(0);
+        for (int i = 0; i < nSamps; ++i)
+            maxAmpL = std::max(maxAmpL, std::fabs(rL[i]));
     }
 
-    float newPeakDb = (maxAmp > 0.000001f) ? juce::Decibels::gainToDecibels(maxAmp) : -100.0f;
-    currentMaximizerPeak = newPeakDb;
+    if (buffer.getNumChannels() > 1)
+    {
+        auto* rR = buffer.getReadPointer(1);
+        for (int i = 0; i < nSamps; ++i)
+            maxAmpR = std::max(maxAmpR, std::fabs(rR[i]));
+    }
+
+    // convert to dB (floor at –100 dB)
+    currentMaximizerPeakLeft = (maxAmpL > 0.000001f)
+        ? juce::Decibels::gainToDecibels(maxAmpL)
+        : -100.0f;
+
+    currentMaximizerPeakRight = (maxAmpR > 0.000001f) ? juce::Decibels::gainToDecibels(maxAmpR) : -100.0f;
 
     // ============= Imager DSP =============
 

@@ -81,6 +81,88 @@ auto dBToFraction = [](float dBVal)
         return juce::jlimit(0.0f, 1.0f, fraction);
     };
 
+void MaximizerComponent::drawMeter(juce::Graphics& g, juce::Rectangle<int> meterRect, float currentDb, float outerDb, float markerDb, bool drawLabels) const {
+    const int x = meterRect.getX();
+    const int w = meterRect.getWidth();
+    const int h = meterRect.getHeight();
+    const int bottom = meterRect.getBottom();
+    g.setColour(juce::Colours::black);
+    g.fillRect(meterRect);
+    {
+        constexpr float alpha = 1.0f;
+        float frac = dBToFraction(outerDb);
+        float yStartF = dBToFraction(yellowStartDb);
+        float rStartF = dBToFraction(redStartDb);
+        // GREEN
+        {
+            int pix = int(h * std::min(frac, yStartF));
+            g.setColour(juce::Colours::limegreen.withAlpha(alpha));
+            g.fillRect(x, bottom - pix, w, pix);
+        }
+        // YELLOW
+        if (frac > yStartF) {
+            int lo = int(h * yStartF);
+            int hi = int(h * std::min(frac, rStartF));
+            g.setColour(juce::Colours::yellow.withAlpha(alpha));
+            g.fillRect(x, bottom - hi, w, hi - lo);
+        }
+        // RED
+        if (frac > rStartF) {
+            int lo = int(h * rStartF);
+            int hi = int(h * frac);
+            g.setColour(juce::Colours::red.withAlpha(alpha));
+            g.fillRect(x, bottom - hi, w, hi - lo);
+        }
+    }
+    /*
+    // instantaneous
+    {
+        float frac = dBToFraction(currentDb);
+        float yStartF = dBToFraction(yellowStartDb);
+        float rStartF = dBToFraction(redStartDb);
+
+        int greenPix = int(h * std::min(frac, yStartF));
+        g.setColour(juce::Colours::limegreen);
+        g.fillRect(x, bottom - greenPix, w, greenPix);
+
+        if (frac > yStartF)
+        {
+            int lo = int(h * yStartF);
+            int hi = int(h * std::min(frac, rStartF));
+            g.setColour(juce::Colours::yellow);
+            g.fillRect(x, bottom - hi, w, hi - lo);
+        }
+        if (frac > rStartF)
+        {
+            int lo = int(h * rStartF);
+            int hi = int(h * frac);
+            g.setColour(juce::Colours::red);
+            g.fillRect(x, bottom - hi, w, hi - lo);
+        }
+    } */
+
+    // marker tick
+    {
+        float frac = dBToFraction(markerDb);
+        int   y = bottom - int(h * frac);
+        g.setColour(juce::Colours::white);
+        g.drawLine((float)x, (float)y, (float)(x + w), (float)y, 2.0f);
+    }
+
+    // grid ticks
+    g.setColour(juce::Colours::grey);
+    for (float db = 0; db >= greenStartDb; db -= 6.0f) {
+        float frac = dBToFraction(db);
+        int y = bottom - int(h * frac);
+        g.drawLine((float)x, (float)y, (float)(x + w), (float)y);
+        if (drawLabels) {
+            g.setColour(juce::Colours::white);
+            g.drawFittedText(juce::String((int)db) + " dB", x - 35, y - 7, 30, 14, juce::Justification::centredRight, 1);
+            g.setColour(juce::Colours::grey);
+        }
+    }
+}
+
 void MaximizerComponent::paint(juce::Graphics& g)
 {
     juce::ColourGradient gradient(juce::Colour(40, 40, 40), 0, 0, juce::Colour(40, 40, 40), getWidth(), 0, false);
@@ -90,89 +172,62 @@ void MaximizerComponent::paint(juce::Graphics& g)
     g.setGradientFill(gradient);
     g.fillAll();
 
-    // background for the meter
-    g.setColour(juce::Colours::black);
-    g.fillRect(meterRect);
-    float peakDb = audioProcessor.getMaximizerPeak();
-    float peakFill = dBToFraction(peakDb);
-    float yStartFrac = dBToFraction(yellowStartDb);
-    float rStartFrac = dBToFraction(redStartDb);
-    int meterHeight = meterRect.getHeight();
-    int meterBottom = meterRect.getBottom();
+    auto instL = audioProcessor.getMaximizerPeakLeft();
+    auto instR = audioProcessor.getMaximizerPeakRight();
 
-    // ============== GREEN FILL ==============
-    float greenTopFrac = std::min(peakFill, yStartFrac);
-    int greenPixels = (int)(meterHeight * greenTopFrac);
-    int greenY = meterBottom - greenPixels;
-    g.setColour(juce::Colours::limegreen);
-    g.fillRect(meterRect.getX(), greenY, meterRect.getWidth(), greenPixels);
+    // left meter: draw ticks+labels
+    drawMeter(g, leftMeterRect,
+        instL, outerPeakLeft, markerPeakLeft,
+        /*drawLabels=*/true);
 
-    // ============== YELLOW FILL ==============
-    if (peakFill > yStartFrac)
-    {
-        float yLowFrac = yStartFrac;
-        float yHighFrac = std::min(peakFill, rStartFrac);
-        int yLowPix = (int)(meterHeight * yLowFrac);
-        int yHighPix = (int)(meterHeight * yHighFrac);
-        int fillHeight = yHighPix - yLowPix;
-        int fillY = meterBottom - yHighPix;
-        g.setColour(juce::Colours::yellow);
-        g.fillRect(meterRect.getX(), fillY, meterRect.getWidth(), fillHeight);
-    }
-
-    // ============== RED FILL ===============
-    if (peakFill > rStartFrac)
-    {
-        float rLowFrac = rStartFrac;
-        float rHighFrac = peakFill;
-        int rLowPix = (int)(meterHeight * rLowFrac);
-        int rHighPix = (int)(meterHeight * rHighFrac);
-        int fillHeight = rHighPix - rLowPix;
-        int fillY = meterBottom - rHighPix;
-
-        g.setColour(juce::Colours::red);
-        g.fillRect(meterRect.getX(), fillY, meterRect.getWidth(), fillHeight);
-    }
-    for (float dBtick = 0.0f; dBtick >= -60.0f; dBtick -= 6.0f)
-    {
-        float frac = dBToFraction(dBtick);
-        int yPix = meterBottom - (int)(meterHeight * frac);
-        g.setColour(juce::Colours::grey);
-        g.drawLine((float)meterRect.getX(),
-            (float)yPix,
-            (float)(meterRect.getRight()),
-            (float)yPix,
-            1.0f);
-        juce::String labelText = juce::String((int)dBtick) + " dB";
-        g.setColour(juce::Colours::white);
-        g.drawFittedText(labelText,
-            meterRect.getX() - 35,
-            yPix - 7,
-            30, 14,
-            juce::Justification::centredRight,
-            1);
-    }
+    // right meter: ticks only
+    drawMeter(g, rightMeterRect,
+        instR, outerPeakRight, markerPeakRight,
+        /*drawLabels=*/false);
 }
 
-void MaximizerComponent::resized()
-{
+void MaximizerComponent::resized() {
     auto area = getLocalBounds().reduced(10);
-    int meterWidth = 50;
-    float sliderWidth = 0.02f;
-    auto thresholdArea = area.removeFromLeft((int)(area.getWidth() * 0.2f));
-    thresholdLabel.setBounds(thresholdArea.removeFromTop(20));
-    thresholdSlider.setBounds(thresholdArea);
-    auto meterArea = area.removeFromLeft(meterWidth);
-    meterRect = meterArea;
-    auto ceilingArea = area.removeFromLeft((int)(area.getWidth() * 0.25f));
-    ceilingLabel.setBounds(ceilingArea.removeFromTop(20));
-    ceilingSlider.setBounds(ceilingArea);
-    auto releaseArea = area;
-    releaseLabel.setBounds(releaseArea.removeFromTop(20));
-    releaseSlider.setBounds(releaseArea.withSizeKeepingCentre(250, 250));
+    auto threshArea = area.removeFromLeft((int)(area.getWidth() * 0.2f));
+    thresholdLabel.setBounds(threshArea.removeFromTop(20));
+    thresholdSlider.setBounds(threshArea);
+    static constexpr int meterW = 50;
+    leftMeterRect = area.removeFromLeft(meterW);
+    rightMeterRect = area.removeFromLeft(meterW);
+    auto ceilArea = area.removeFromLeft((int)(area.getWidth() * 0.25f));
+    ceilingLabel.setBounds(ceilArea.removeFromTop(20));
+    ceilingSlider.setBounds(ceilArea);
+    releaseLabel.setBounds(area.removeFromTop(20));
+    releaseSlider.setBounds(area.withSizeKeepingCentre(250, 250));
 }
 
-void MaximizerComponent::timerCallback()
-{
+void MaximizerComponent::timerCallback() {
+    double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    double delta = now - lastTimerTime;
+    lastTimerTime = now;
+    float instL = audioProcessor.getMaximizerPeakLeft();
+    float instR = audioProcessor.getMaximizerPeakRight();
+    if (instL > outerPeakLeft) outerPeakLeft = instL;
+    else outerPeakLeft = juce::jmax(outerPeakLeft - decayRateDbPerSec * (float)delta, instL);
+    if (instL > markerPeakLeft) {
+        markerPeakLeft = instL;
+        holdTimeLeft = 0.0;
+    }
+    else {
+        holdTimeLeft += delta;
+        if (holdTimeLeft >= holdDuration)
+            markerPeakLeft = juce::jmax(markerPeakLeft - decayRateDbPerSec * (float)delta, instL);
+    }
+    if (instR > outerPeakRight) outerPeakRight = instR;
+    else outerPeakRight = juce::jmax(outerPeakRight - decayRateDbPerSec * (float)delta, instR);
+    if (instR > markerPeakRight){
+        markerPeakRight = instR;
+        holdTimeRight = 0.0;
+    }
+    else {
+        holdTimeRight += delta;
+        if (holdTimeRight >= holdDuration)
+            markerPeakRight = juce::jmax(markerPeakRight - decayRateDbPerSec * (float)delta, instR);
+    }
     repaint();
 }

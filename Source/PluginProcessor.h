@@ -52,7 +52,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
-    float getMaximizerPeak() const { return currentMaximizerPeak; }
+    float getMaximizerPeakLeft()  const { return currentMaximizerPeakLeft; }
+    float getMaximizerPeakRight() const { return currentMaximizerPeakRight; }
 
     int getScopeSize() const { return scopeSize; }
     int getScopeIndex() const { return scopeIndex.load(); }
@@ -93,7 +94,8 @@ private:
 
     juce::dsp::Compressor<float> limiter;
 
-    float currentMaximizerPeak = -100.0f;
+    float currentMaximizerPeakLeft = -100.0f;
+    float currentMaximizerPeakRight = -100.0f;
 
     // ring buffer for L/R
     static constexpr int scopeSize = 1024;
