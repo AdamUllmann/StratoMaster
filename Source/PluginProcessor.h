@@ -52,8 +52,12 @@ public:
 
     juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
-    float getMaximizerPeakLeft()  const { return currentMaximizerPeakLeft; }
+    float getMaximizerPeakLeft() const { return currentMaximizerPeakLeft; }
     float getMaximizerPeakRight() const { return currentMaximizerPeakRight; }
+    float getPreGainPeakLeft() const { return currentPreGainPeakLeft; }
+    float getPreGainPeakRight() const { return currentPreGainPeakRight; }
+    float getPostGainPeakLeft() const { return currentPostGainPeakLeft; }
+    float getPostGainPeakRight() const { return currentPostGainPeakRight; }
 
     int getScopeSize() const { return scopeSize; }
     int getScopeIndex() const { return scopeIndex.load(); }
@@ -96,6 +100,8 @@ private:
 
     float currentMaximizerPeakLeft = -100.0f;
     float currentMaximizerPeakRight = -100.0f;
+    float currentPreGainPeakLeft = -100.0f, currentPreGainPeakRight = -100.0f;
+    float currentPostGainPeakLeft = -100.0f, currentPostGainPeakRight = -100.0f;
 
     // ring buffer for L/R
     static constexpr int scopeSize = 1024;

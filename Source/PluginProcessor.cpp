@@ -188,6 +188,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         50.0f // ms
     ));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "PreGain", "Pre Gain",
+        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        0.0f
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "PostGain", "Post Gain",
+        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        0.0f
+    ));
+
 
     // ========== IMAGER PARAMETERS ==========
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -618,11 +630,42 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     auto maxCeiling = apvts.getRawParameterValue("MaxCeiling")->load();
     auto maxReleaseMs = apvts.getRawParameterValue("MaxRelease")->load();
 
+    float preDb = apvts.getRawParameterValue("PreGain")->load();
+    float preLin = juce::Decibels::decibelsToGain(preDb);
+    buffer.applyGain(preLin);
+
+    float maxPreL = 0.0f, maxPreR = 0.0f;
+    auto nSamps = buffer.getNumSamples();
+    if (buffer.getNumChannels() > 0)
+        for (int i = 0; i < nSamps; ++i)
+            maxPreL = std::max(maxPreL, std::fabs(buffer.getReadPointer(0)[i]));
+    if (buffer.getNumChannels() > 1)
+        for (int i = 0; i < nSamps; ++i)
+            maxPreR = std::max(maxPreR, std::fabs(buffer.getReadPointer(1)[i]));
+
+    currentPreGainPeakLeft = (maxPreL > 1e-6f) ? juce::Decibels::gainToDecibels(maxPreL) : -100.0f;
+    currentPreGainPeakRight = (maxPreR > 1e-6f) ? juce::Decibels::gainToDecibels(maxPreR) : -100.0f;
+
     limiter.setThreshold(maxThreshold);
     limiter.setRatio(100.0f);
     limiter.setAttack(1.0f);
     limiter.setRelease(maxReleaseMs);
     limiter.process(context);
+
+    float postDb = apvts.getRawParameterValue("PostGain")->load();
+    float postLin = juce::Decibels::decibelsToGain(postDb);
+    buffer.applyGain(postLin);
+
+    float maxPostL = 0.0f, maxPostR = 0.0f;
+    if (buffer.getNumChannels() > 0)
+        for (int i = 0; i < nSamps; ++i)
+            maxPostL = std::max(maxPostL, std::fabs(buffer.getReadPointer(0)[i]));
+    if (buffer.getNumChannels() > 1)
+        for (int i = 0; i < nSamps; ++i)
+            maxPostR = std::max(maxPostR, std::fabs(buffer.getReadPointer(1)[i]));
+
+    currentPostGainPeakLeft = (maxPostL > 1e-6f) ? juce::Decibels::gainToDecibels(maxPostL) : -100.0f;
+    currentPostGainPeakRight = (maxPostR > 1e-6f) ? juce::Decibels::gainToDecibels(maxPostR) : -100.0f;
 
     float linearCeiling = juce::Decibels::decibelsToGain(maxCeiling);
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
@@ -636,7 +679,6 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     }
 
     float maxAmpL = 0.0f, maxAmpR = 0.0f;
-    int   nSamps = buffer.getNumSamples();
 
     if (buffer.getNumChannels() > 0)
     {

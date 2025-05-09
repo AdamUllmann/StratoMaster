@@ -18,6 +18,8 @@ struct MaximizerAttachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> thresholdAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ceilingAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> releaseAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> preGainAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> postGainAttachment;
 };
 
 //==============================================================================
@@ -35,38 +37,38 @@ public:
 private:
     juce::Slider thresholdSlider;
     juce::Slider ceilingSlider;
-
     juce::Slider releaseSlider;
 
     juce::Label thresholdLabel;
     juce::Label ceilingLabel;
     juce::Label releaseLabel;
 
+    juce::Slider preGainSlider, postGainSlider;
+    juce::Label  preGainLabel, postGainLabel;
+
     juce::Rectangle<int> leftMeterRect, rightMeterRect;
+    juce::Rectangle<int> preLeftMeterRect, preRightMeterRect;
+    juce::Rectangle<int> postLeftMeterRect, postRightMeterRect;
 
-    float outerPeakLeft = -60.0f,
-        outerPeakRight = -60.0f;
-    float markerPeakLeft = -60.0f,
-        markerPeakRight = -60.0f;
 
-    // how long since last new peak (seconds)
-    double holdTimeLeft = 0.0,
-        holdTimeRight = 0.0;
+    float greenStartDb = -60.0f;
+    float outerPeakLeft = greenStartDb, outerPeakRight = greenStartDb;
+    float markerPeakLeft = greenStartDb, markerPeakRight = greenStartDb;
+    float outerPreLeft = greenStartDb, outerPreRight = greenStartDb;
+    float markerPreLeft = greenStartDb, markerPreRight = greenStartDb;
+    float outerPostLeft = greenStartDb, outerPostRight = greenStartDb;
+    float markerPostLeft = greenStartDb, markerPostRight = greenStartDb;
 
-    // time of last timer tick (seconds)
+    double holdTimeLeft = 0.0, holdTimeRight = 0.0;
+    double holdTimePreLeft = 0.0, holdTimePreRight = 0.0;
+    double holdTimePostLeft = 0.0, holdTimePostRight = 0.0;
+
     double lastTimerTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
 
-    // constants
-    static constexpr double holdDuration = 2.0;   // seconds before marker decays
-    static constexpr float  decayRateDbPerSec = 20.0f; // dB/sec decay speed
+    static constexpr double holdDuration = 2.0;
+    static constexpr float  decayRateDbPerSec = 20.0f;
 
-    // updated signature: now takes current, smoothed, and marker dB
-    void drawMeter(juce::Graphics& g,
-        juce::Rectangle<int> meterRect,
-        float currentDb,
-        float outerDb,
-        float markerDb,
-        bool drawLabels) const;
+    void drawMeter(juce::Graphics& g, juce::Rectangle<int> meterRect, float currentDb, float outerDb, float markerDb, bool drawLabels) const;
 
     MaximizerAttachments attachments;
     juce::AudioProcessorValueTreeState& apvtsRef;

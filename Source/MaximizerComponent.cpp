@@ -29,6 +29,8 @@ MaximizerComponent::MaximizerComponent(StratomasterAudioProcessor& proc,
     : audioProcessor(proc),
     apvtsRef(apvts)
 {
+    auto verdanaBold = juce::Font("Verdana", 14.0f, juce::Font::bold);
+
     // Threshold
     thresholdSlider.setSliderStyle(juce::Slider::LinearVertical);
     thresholdSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 18);
@@ -40,6 +42,7 @@ MaximizerComponent::MaximizerComponent(StratomasterAudioProcessor& proc,
 
     thresholdLabel.setText("Threshold", juce::dontSendNotification);
     thresholdLabel.setJustificationType(juce::Justification::centred);
+    thresholdLabel.setFont(verdanaBold);
     addAndMakeVisible(thresholdLabel);
 
     // Ceiling
@@ -53,12 +56,13 @@ MaximizerComponent::MaximizerComponent(StratomasterAudioProcessor& proc,
 
     ceilingLabel.setText("Ceiling", juce::dontSendNotification);
     ceilingLabel.setJustificationType(juce::Justification::centred);
+    ceilingLabel.setFont(verdanaBold);
     addAndMakeVisible(ceilingLabel);
 
     // Release
-    releaseSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    releaseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
-    releaseSlider.setColour(juce::Slider::rotarySliderFillColourId, releaseColour);
+    releaseSlider.setSliderStyle(juce::Slider::LinearVertical);
+    releaseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 18);
+    releaseSlider.setColour(juce::Slider::trackColourId, releaseColour);
     addAndMakeVisible(releaseSlider);
 
     attachments.releaseAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
@@ -66,7 +70,34 @@ MaximizerComponent::MaximizerComponent(StratomasterAudioProcessor& proc,
 
     releaseLabel.setText("Release", juce::dontSendNotification);
     releaseLabel.setJustificationType(juce::Justification::centred);
+    releaseLabel.setFont(verdanaBold);
     addAndMakeVisible(releaseLabel);
+
+    // Pre-Gain
+    preGainSlider.setSliderStyle(juce::Slider::LinearVertical);
+    preGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 18);
+    preGainSlider.setColour(juce::Slider::trackColourId, juce::Colours::deepskyblue);
+    preGainSlider.setColour(juce::Slider::thumbColourId, juce::Colours::skyblue);
+    addAndMakeVisible(preGainSlider);
+    attachments.preGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        apvtsRef, "PreGain", preGainSlider));
+    preGainLabel.setText("Pre", juce::dontSendNotification);
+    preGainLabel.setJustificationType(juce::Justification::centred);
+    preGainLabel.setFont(verdanaBold);
+    addAndMakeVisible(preGainLabel);
+
+    // Post-Gain
+    postGainSlider.setSliderStyle(juce::Slider::LinearVertical);
+    postGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 18);
+    postGainSlider.setColour(juce::Slider::trackColourId, juce::Colours::hotpink);
+    postGainSlider.setColour(juce::Slider::thumbColourId, juce::Colours::deeppink);
+    addAndMakeVisible(postGainSlider);
+    attachments.postGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        apvtsRef, "PostGain", postGainSlider));
+    postGainLabel.setText("Post", juce::dontSendNotification);
+    postGainLabel.setJustificationType(juce::Justification::centred);
+    postGainLabel.setFont(verdanaBold);
+    addAndMakeVisible(postGainLabel);
 
     startTimerHz(60);
 }
@@ -149,6 +180,7 @@ void MaximizerComponent::drawMeter(juce::Graphics& g, juce::Rectangle<int> meter
         g.drawLine((float)x, (float)y, (float)(x + w), (float)y, 2.0f);
     }
 
+    g.setFont(juce::Font("Verdana", 11.0f, juce::Font::bold));
     // grid ticks
     g.setColour(juce::Colours::grey);
     for (float db = 0; db >= greenStartDb; db -= 6.0f) {
@@ -171,6 +203,7 @@ void MaximizerComponent::paint(juce::Graphics& g)
     gradient.addColour(0.8, juce::Colour(60, 60, 60));
     g.setGradientFill(gradient);
     g.fillAll();
+    g.setFont(juce::Font("Verdana", 11.0f, juce::Font::bold));
 
     auto instL = audioProcessor.getMaximizerPeakLeft();
     auto instR = audioProcessor.getMaximizerPeakRight();
@@ -184,21 +217,106 @@ void MaximizerComponent::paint(juce::Graphics& g)
     drawMeter(g, rightMeterRect,
         instR, outerPeakRight, markerPeakRight,
         /*drawLabels=*/false);
+
+    auto preInstL = audioProcessor.getPreGainPeakLeft();
+    auto preInstR = audioProcessor.getPreGainPeakRight();
+    drawMeter(g, preLeftMeterRect,
+        preInstL, outerPreLeft, markerPreLeft,
+        /*drawLabels=*/ true);
+    drawMeter(g, preRightMeterRect,
+        preInstR, outerPreRight, markerPreRight,
+        /*drawLabels=*/ false);
+
+    auto postInstL = audioProcessor.getPostGainPeakLeft();
+    auto postInstR = audioProcessor.getPostGainPeakRight();
+    drawMeter(g, postLeftMeterRect,
+        postInstL, outerPostLeft, markerPostLeft,
+        /*drawLabels=*/ true);
+    drawMeter(g, postRightMeterRect,
+        postInstR, outerPostRight, markerPostRight,
+        /*drawLabels=*/ false);
 }
 
-void MaximizerComponent::resized() {
+void MaximizerComponent::resized()
+{
     auto area = getLocalBounds().reduced(10);
-    auto threshArea = area.removeFromLeft((int)(area.getWidth() * 0.2f));
-    thresholdLabel.setBounds(threshArea.removeFromTop(20));
-    thresholdSlider.setBounds(threshArea);
-    static constexpr int meterW = 50;
-    leftMeterRect = area.removeFromLeft(meterW);
-    rightMeterRect = area.removeFromLeft(meterW);
-    auto ceilArea = area.removeFromLeft((int)(area.getWidth() * 0.25f));
-    ceilingLabel.setBounds(ceilArea.removeFromTop(20));
-    ceilingSlider.setBounds(ceilArea);
-    releaseLabel.setBounds(area.removeFromTop(20));
-    releaseSlider.setBounds(area.withSizeKeepingCentre(250, 250));
+    // Threshold
+    auto tA = area.removeFromLeft(int(area.getWidth() * 0.2f));
+    thresholdLabel.setBounds(tA.removeFromTop(20));
+    thresholdSlider.setBounds(tA);
+
+    // meters 
+    constexpr int limMeterW = 50;
+    constexpr int meterVMargin = 20;
+    {
+        auto leftA = area.removeFromLeft(limMeterW);
+        leftMeterRect = leftA.withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+
+        auto rightA = area.removeFromLeft(limMeterW);
+        rightMeterRect = rightA.withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+    }
+
+    // ceiling
+    auto cA = area.removeFromLeft(int(area.getWidth() * 0.25f));
+    ceilingLabel.setBounds(cA.removeFromTop(20));
+    ceilingSlider.setBounds(cA);
+
+    // PRE/POST
+    constexpr int meterW = 30;
+    constexpr int sliderW = 50;
+    constexpr int gap = 40;
+    constexpr int labelH = 20;
+
+    int totalW = (meterW + sliderW) * 2 + gap;
+    auto gainArea = area.removeFromRight(totalW);
+
+    {
+        auto preFull = gainArea.removeFromLeft(meterW + sliderW);
+        auto labelRect = preFull.removeFromTop(labelH);
+        preGainLabel.setBounds(labelRect);
+        auto sliderRect = preFull.removeFromRight(sliderW);
+        preGainSlider.setBounds({ sliderRect.getX(),
+                                  sliderRect.getY(),
+                                  sliderW,
+                                  sliderRect.getHeight() });
+        auto meterArea = preFull.withHeight(sliderRect.getHeight())
+            .withY(sliderRect.getY());
+        int halfW = meterW / 2;
+        preLeftMeterRect = meterArea.removeFromLeft(halfW)
+            .withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+        preRightMeterRect = meterArea
+            .withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+    }
+    // gap
+    gainArea.removeFromLeft(gap);
+    {
+        auto postFull = gainArea.removeFromLeft(meterW + sliderW);
+        auto labelRect = postFull.removeFromTop(labelH);
+        postGainLabel.setBounds(labelRect);
+        auto sliderRect = postFull.removeFromRight(sliderW);
+        postGainSlider.setBounds({ sliderRect.getX(),
+                                   sliderRect.getY(),
+                                   sliderW,
+                                   sliderRect.getHeight() });
+
+        auto meterArea = postFull.withHeight(sliderRect.getHeight())
+            .withY(sliderRect.getY());
+        int halfW = meterW / 2;
+        postLeftMeterRect = meterArea.removeFromLeft(halfW)
+            .withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+        postRightMeterRect = meterArea
+            .withTrimmedTop(meterVMargin)
+            .withTrimmedBottom(meterVMargin);
+    }
+    constexpr int releaseSliderW = 80;
+    auto releaseArea = area.removeFromLeft(releaseSliderW);
+    releaseLabel.setBounds(releaseArea.removeFromTop(labelH));
+    releaseSlider.setBounds(releaseArea);
 }
 
 void MaximizerComponent::timerCallback() {
@@ -207,8 +325,14 @@ void MaximizerComponent::timerCallback() {
     lastTimerTime = now;
     float instL = audioProcessor.getMaximizerPeakLeft();
     float instR = audioProcessor.getMaximizerPeakRight();
-    if (instL > outerPeakLeft) outerPeakLeft = instL;
-    else outerPeakLeft = juce::jmax(outerPeakLeft - decayRateDbPerSec * (float)delta, instL);
+    float preL = audioProcessor.getPreGainPeakLeft();
+    float preR = audioProcessor.getPreGainPeakRight();
+    float postL = audioProcessor.getPostGainPeakLeft();
+    float postR = audioProcessor.getPostGainPeakRight();
+    if (instL > outerPeakLeft)
+        outerPeakLeft = instL;
+    else
+        outerPeakLeft = juce::jmax(outerPeakLeft - decayRateDbPerSec * (float)delta, instL);
     if (instL > markerPeakLeft) {
         markerPeakLeft = instL;
         holdTimeLeft = 0.0;
@@ -218,9 +342,12 @@ void MaximizerComponent::timerCallback() {
         if (holdTimeLeft >= holdDuration)
             markerPeakLeft = juce::jmax(markerPeakLeft - decayRateDbPerSec * (float)delta, instL);
     }
-    if (instR > outerPeakRight) outerPeakRight = instR;
-    else outerPeakRight = juce::jmax(outerPeakRight - decayRateDbPerSec * (float)delta, instR);
-    if (instR > markerPeakRight){
+
+    if (instR > outerPeakRight)
+        outerPeakRight = instR;
+    else
+        outerPeakRight = juce::jmax(outerPeakRight - decayRateDbPerSec * (float)delta, instR);
+    if (instR > markerPeakRight) {
         markerPeakRight = instR;
         holdTimeRight = 0.0;
     }
@@ -228,6 +355,59 @@ void MaximizerComponent::timerCallback() {
         holdTimeRight += delta;
         if (holdTimeRight >= holdDuration)
             markerPeakRight = juce::jmax(markerPeakRight - decayRateDbPerSec * (float)delta, instR);
+    }
+    if (preL > outerPreLeft)
+        outerPreLeft = preL;
+    else
+        outerPreLeft = juce::jmax(outerPreLeft - decayRateDbPerSec * (float)delta, preL);
+    if (preL > markerPreLeft) {
+        markerPreLeft = preL;
+        holdTimePreLeft = 0.0;
+    }
+    else {
+        holdTimePreLeft += delta;
+        if (holdTimePreLeft >= holdDuration)
+            markerPreLeft = juce::jmax(markerPreLeft - decayRateDbPerSec * (float)delta, preL);
+    }
+    if (preR > outerPreRight)
+        outerPreRight = preR;
+    else
+        outerPreRight = juce::jmax(outerPreRight - decayRateDbPerSec * (float)delta, preR);
+    if (preR > markerPreRight) {
+        markerPreRight = preR;
+        holdTimePreRight = 0.0;
+    }
+    else {
+        holdTimePreRight += delta;
+        if (holdTimePreRight >= holdDuration)
+            markerPreRight = juce::jmax(markerPreRight - decayRateDbPerSec * (float)delta, preR);
+    }
+    if (postL > outerPostLeft)
+        outerPostLeft = postL;
+    else
+        outerPostLeft = juce::jmax(outerPostLeft - decayRateDbPerSec * (float)delta, postL);
+    if (postL > markerPostLeft) {
+        markerPostLeft = postL;
+        holdTimePostLeft = 0.0;
+    }
+    else {
+        holdTimePostLeft += delta;
+        if (holdTimePostLeft >= holdDuration)
+            markerPostLeft = juce::jmax(markerPostLeft - decayRateDbPerSec * (float)delta, postL);
+    }
+    if (postR > outerPostRight)
+        outerPostRight = postR;
+    else
+        outerPostRight = juce::jmax(outerPostRight - decayRateDbPerSec * (float)delta, postR);
+
+    if (postR > markerPostRight) {
+        markerPostRight = postR;
+        holdTimePostRight = 0.0;
+    }
+    else {
+        holdTimePostRight += delta;
+        if (holdTimePostRight >= holdDuration)
+            markerPostRight = juce::jmax(markerPostRight - decayRateDbPerSec * (float)delta, postR);
     }
     repaint();
 }
