@@ -240,16 +240,15 @@ void ParametricEQComponent::mouseDown(const juce::MouseEvent& event)
     auto graphArea = getGraphBounds();
     if (!graphArea.contains(event.getPosition()))
         return;
-    const float handleRadius = 6.0f;
-    for (int i = 0; i < numBands; ++i)
-    {
-        auto distance = event.getPosition().toFloat().getDistanceFrom(bandHandles[i].centre);
-        if (distance < handleRadius + 3.0f)
-        {
+
+    // start dragging a band…
+    constexpr float handleRadius = 8.0f;
+    for (int i = 0; i < numBands; i++)
+        if (event.getPosition().toFloat().getDistanceFrom(bandHandles[i].centre) <= handleRadius) {
             draggingHandleIndex = i;
+            setMouseCursor(juce::MouseCursor::DraggingHandCursor);
             break;
         }
-    }
 }
 
 void ParametricEQComponent::mouseDrag(const juce::MouseEvent& event)
@@ -263,11 +262,13 @@ void ParametricEQComponent::mouseDrag(const juce::MouseEvent& event)
     float newFreq = xToFrequency(pos.x);
     float newGain = yToGain(pos.y);
     updateSlidersFromHandle(draggingHandleIndex, newFreq, newGain); // update the param for freq & gain. Q is untouched
+    setMouseCursor(juce::MouseCursor::DraggingHandCursor);
 }
 
 void ParametricEQComponent::mouseUp(const juce::MouseEvent& /*event*/)
 {
     draggingHandleIndex = -1;
+    setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
 //==============================================================================
@@ -542,27 +543,25 @@ void ParametricEQComponent::drawEQCurve(juce::Graphics& g, juce::Rectangle<int> 
     g.strokePath(eqPath, juce::PathStrokeType(2.0f));
 }
 
-void ParametricEQComponent::mouseMove(const juce::MouseEvent& event) {
+void ParametricEQComponent::mouseMove(const juce::MouseEvent& e) {
     auto graphArea = getGraphBounds();
-    auto pos = event.getPosition().toFloat();
-    if (!graphArea.contains(event.getPosition())) {
-        if (hoveredHandleIndex >= 0) {
-            hoveredHandleIndex = -1;
-            repaint();
-        }
-        return;
-    }
-    constexpr float handleRadius = 8.0f;
+    auto pos = e.getPosition().toFloat();
     int newHover = -1;
-    for (int i = 0; i < numBands; ++i) {
+    constexpr float handleRadius = 8.0f;
+    for (int i = 0; i < numBands; i++)
         if (pos.getDistanceFrom(bandHandles[i].centre) <= handleRadius) {
             newHover = i;
             break;
         }
-    }
     if (newHover != hoveredHandleIndex) {
         hoveredHandleIndex = newHover;
         repaint();
+    }
+    if (hoveredHandleIndex >= 0) {
+        setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    }
+    else {
+        setMouseCursor(juce::MouseCursor::NormalCursor);
     }
 }
 
@@ -571,6 +570,7 @@ void ParametricEQComponent::mouseExit(const juce::MouseEvent&) {
         hoveredHandleIndex = -1;
         repaint();
     }
+    setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
 void ParametricEQComponent::drawSingleBandCurve(juce::Graphics& g, juce::Rectangle<int> graphArea, int bandIndex) {

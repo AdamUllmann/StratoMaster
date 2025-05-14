@@ -10,7 +10,7 @@
 #include "SettingsComponent.h"
 
 //==============================================================================
-class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::ChangeListener, private juce::Timer
+class StratomasterAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::ChangeListener, private juce::Timer, private juce::MouseListener
 {
 public:
     StratomasterAudioProcessorEditor(StratomasterAudioProcessor&);
@@ -18,6 +18,8 @@ public:
 
     void paint(juce::Graphics&) override;
     void resized() override;
+    void mouseEnter(const juce::MouseEvent& e) override;
+    void mouseExit(const juce::MouseEvent& e) override;
 
 private:
     StratomasterAudioProcessor& audioProcessor;

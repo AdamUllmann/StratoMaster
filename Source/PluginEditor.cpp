@@ -67,6 +67,7 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     addAndMakeVisible(settingsPanel);
     settingsPanel.setVisible(false);
 
+    addMouseListener(this, /*recursive=*/ true);
     setResizable(true, true);
     setResizeLimits(750, 400, 2000, 1400);
     setSize(1000, 500);
@@ -105,6 +106,18 @@ StratomasterAudioProcessorEditor::~StratomasterAudioProcessorEditor()
     stopTimer();
     audioProcessor.removeChangeListener(this);
     setLookAndFeel(nullptr);
+    removeMouseListener(this);
+}
+
+void StratomasterAudioProcessorEditor::mouseEnter(const juce::MouseEvent& e) {
+    auto* c = e.eventComponent;
+    if (dynamic_cast<juce::Button*> (c) || dynamic_cast<juce::ComboBox*> (c) || dynamic_cast<juce::TextEditor*> (c)) {
+        c->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    }
+}
+
+void StratomasterAudioProcessorEditor::mouseExit(const juce::MouseEvent& e) {
+    e.eventComponent->setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
 void StratomasterAudioProcessorEditor::paint(juce::Graphics& g)
