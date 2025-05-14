@@ -168,6 +168,13 @@ private:
     std::array<std::vector<float>, numBands> diffHistory;
     std::array<int, numBands> diffIndex;
 
+    using KWFilter = juce::dsp::ProcessorDuplicator<
+        juce::dsp::IIR::Filter<float>,
+        juce::dsp::IIR::Coefficients<float>>;
+
+    KWFilter kWeightHighPass, kWeightShelf;
+    float currentShortTermWeightedRmsDb = -100.0f;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StratomasterAudioProcessor)
 };
 

@@ -270,8 +270,14 @@ void StratomasterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
 
     limiter.prepare(spec);
 
-    for (int b = 0; b < numBands; ++b)
-    {
+    auto hpCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 20.0f);
+    *kWeightHighPass.state = *hpCoeffs;
+    kWeightHighPass.prepare(spec);
+    auto shCoeffs = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, 1000.0f, 0.707f, juce::Decibels::decibelsToGain(4.0f));
+    *kWeightShelf.state = *shCoeffs;
+    kWeightShelf.prepare(spec);
+
+    for (int b = 0; b < numBands; ++b) {
         diffHistory[b].resize(diffHistorySize, 0.0f);
         diffIndex[b] = 0;
     }
@@ -449,6 +455,16 @@ void StratomasterAudioProcessor::startAutoMaximize() {
 
 void StratomasterAudioProcessor::stopAutoMaximize() {
     isAutoMaxActive = false;
+    float thresholdDb = apvts.getRawParameterValue("MaxThreshold")->load();
+    if (auto* th = dynamic_cast<juce::AudioParameterFloat*>(
+        apvts.getParameter("MaxThreshold")))
+    {
+        th->beginChangeGesture();
+        th->setValueNotifyingHost(
+            th->getNormalisableRange().convertTo0to1(thresholdDb * 0.7));
+        th->endChangeGesture();
+    }
+
     sendChangeMessage();
 }
 
@@ -456,17 +472,14 @@ void StratomasterAudioProcessor::doAutoMaximizeFromPeaks() {
     if (++controlFrameCount < framesPerUpdate)
         return;
     controlFrameCount = 0;
-    float preL = currentPreGainPeakLeft;
-    float preR = currentPreGainPeakRight;
-    float prePeakDb = std::max(preL, preR);
     float thresholdDb = apvts.getRawParameterValue("MaxThreshold")->load();
-    float postMakeupDb = prePeakDb - thresholdDb;
-
+    float postMakeupDb = currentShortTermWeightedRmsDb - thresholdDb;
     peakSmoothedDb = smoothingAlpha * postMakeupDb
         + (1.0f - smoothingAlpha) * peakSmoothedDb;
 
     float ceilingDb = apvts.getRawParameterValue("MaxCeiling")->load();
-    float targetDb = ceilingDb - maximizerMarginDb;
+    float baseTargetDb = ceilingDb - maximizerMarginDb;
+    float targetDb = baseTargetDb * (2.0f / 3.0f);
 
     float error = targetDb - peakSmoothedDb;
     if (std::fabs(error) < deadbandDb)
@@ -476,17 +489,16 @@ void StratomasterAudioProcessor::doAutoMaximizeFromPeaks() {
         return;
     }
     stableFrameCount = 0;
+    static constexpr float minStepDb = 0.05f;
+    static constexpr float maxStepDb = 1.0f;
+    static constexpr float errorToStepGain = 0.3f;
+    float absErr = std::fabs(error);
+    float dynStep = juce::jlimit(minStepDb, maxStepDb, absErr * errorToStepGain);
     float newThresholdDb = thresholdDb;
-    if (error > deadbandDb)
-        newThresholdDb = thresholdDb - stepDb;
-    else if (error < -deadbandDb)
-        newThresholdDb = thresholdDb + stepDb;
-    newThresholdDb = juce::jlimit(thresholdMinDb,
-        thresholdMaxDb,
-        newThresholdDb);
-    if (auto* th = dynamic_cast<juce::AudioParameterFloat*>(
-        apvts.getParameter("MaxThreshold")))
-    {
+    if (error > deadbandDb)        newThresholdDb = thresholdDb - dynStep;
+    else if (error < -deadbandDb)   newThresholdDb = thresholdDb + dynStep;
+    newThresholdDb = juce::jlimit(thresholdMinDb, thresholdMaxDb, newThresholdDb);
+    if (auto* th = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("MaxThreshold"))) {
         th->beginChangeGesture();
         th->setValueNotifyingHost(
             th->getNormalisableRange().convertTo0to1(newThresholdDb));
@@ -737,6 +749,23 @@ void StratomasterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
     float postDb = apvts.getRawParameterValue("PostGain")->load();
     float postLin = juce::Decibels::decibelsToGain(postDb);
     buffer.applyGain(postLin);
+
+    {
+        juce::AudioBuffer<float> tmp(buffer);
+        juce::dsp::AudioBlock<float>  blk(tmp);
+        kWeightHighPass.process(juce::dsp::ProcessContextReplacing<float>(blk));
+        kWeightShelf.process(juce::dsp::ProcessContextReplacing<float>(blk));
+        double sumSq = 0.0;
+        int    numCh = tmp.getNumChannels(), numS = tmp.getNumSamples();
+        for (int ch = 0; ch < numCh; ++ch) {
+            auto* d = tmp.getReadPointer(ch);
+            for (int i = 0; i < numS; ++i)
+                sumSq += double(d[i]) * double(d[i]);
+        }
+        double meanSq = sumSq / double(numCh * numS);
+        float  rms = float(std::sqrt(meanSq));
+        currentShortTermWeightedRmsDb = (rms > 1e-5f) ? juce::Decibels::gainToDecibels(rms) : -100.0f;
+    }
 
     float maxPostL = 0.0f, maxPostR = 0.0f;
     if (buffer.getNumChannels() > 0)
