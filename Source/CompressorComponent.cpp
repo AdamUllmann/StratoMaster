@@ -1,4 +1,4 @@
-/*
+﻿/*
   ==============================================================================
 
     CompressorComponent.cpp
@@ -13,7 +13,7 @@
 namespace {
     const juce::Colour lowColour = juce::Colour::fromRGB(200, 100, 40);   // red
     const juce::Colour midColour = juce::Colour::fromRGB(190, 150, 20);   // yellow
-    const juce::Colour highColour = juce::Colour::fromRGB(70, 70, 200);   // blue
+    const juce::Colour highColour = juce::Colour::fromRGB(90, 90, 240);   // blue
 }
 
 //==============================================================================
@@ -29,27 +29,41 @@ CompressorComponent::~CompressorComponent()
 
 }
 
-void CompressorComponent::paint(juce::Graphics& g)
-{
-    juce::ColourGradient gradient(juce::Colour(40, 40, 40), 0, 0, juce::Colour(40, 40, 40), getWidth(), 0, false);
-    gradient.addColour(0.2, juce::Colour(60, 60, 60));
-    gradient.addColour(0.5, juce::Colour(80, 80, 80));
-    gradient.addColour(0.8, juce::Colour(60, 60, 60));
-    g.setGradientFill(gradient);
+void CompressorComponent::paint(juce::Graphics& g) {
+    juce::ColourGradient bgGrad(juce::Colour(40, 40, 40),
+        0, 0,
+        juce::Colour(40, 40, 40),
+        (float)getWidth(), 0,
+        false);
+    bgGrad.addColour(0.2, juce::Colour(50, 50, 50));
+    bgGrad.addColour(0.5, juce::Colour(60, 60, 60));
+    bgGrad.addColour(0.8, juce::Colour(30, 30, 30));
+    g.setGradientFill(bgGrad);
     g.fillAll();
-
-    paintBandBox(g, lowArea);
-    paintBandBox(g, midArea);
-    paintBandBox(g, highArea);
-
-    g.setColour(juce::Colours::darkgrey.darker());
     auto area = getLocalBounds().reduced(10);
-    int rowHeight = area.getHeight() / 3;
-    int line1Y = area.getY() + rowHeight;
-    g.drawLine((float)area.getX(), (float)line1Y, (float)area.getRight(), (float)line1Y, 2.0f);
-
-    int line2Y = area.getY() + rowHeight * 2;
-    g.drawLine((float)area.getX(), (float)line2Y, (float)area.getRight(), (float)line2Y, 2.0f);
+    int  rowH = area.getHeight() / 3;
+    juce::Rectangle<int> rows[] = {
+        area.removeFromTop(rowH),
+        area.removeFromTop(rowH),
+        area
+    };
+    for (auto& r : rows)
+    {
+        auto rf = r.toFloat();
+        juce::ColourGradient metal(juce::Colour(80, 80, 80),
+            rf.getX(), rf.getY(),
+            juce::Colour(40, 40, 40),
+            rf.getX(), rf.getBottom(),
+            false);
+        metal.addColour(0.5, juce::Colour(120, 120, 120));
+        g.setGradientFill(metal);
+        g.fillRoundedRectangle(rf, 8.0f);
+        g.setColour(juce::Colours::black.withAlpha(0.6f));
+        g.drawRoundedRectangle(rf, 8.0f, 2.0f);
+    }
+    g.setColour(juce::Colours::darkgrey.darker());
+    g.drawLine(rows[0].getX(), rows[1].getY(), rows[0].getRight(), rows[1].getY(), 2.0f);
+    g.drawLine(rows[1].getX(), rows[2].getY(), rows[1].getRight(), rows[2].getY(), 2.0f);
 }
 
 void CompressorComponent::resized() {
@@ -123,34 +137,28 @@ void CompressorComponent::addBandControls(BandControls& bc, CompressorAttachment
 void CompressorComponent::layoutBand(BandControls& band, juce::Rectangle<int> area) {
     auto totalWidth = area.getWidth();
     auto totalHeight = area.getHeight();
-    int labelHeight = 20;
-    int knobDiameter = 60;
-    int columns = 5;
+    constexpr int labelHeight = 20;
+    constexpr int knobDiameter = 60;
+    constexpr int columns = 5;
     int colWidth = totalWidth / columns;
     auto currentArea = area;
-    {
-        auto knobArea = currentArea.removeFromLeft(colWidth);
-        band.thresholdLabel.setBounds(knobArea.removeFromTop(labelHeight));
-        band.threshold.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
-    }
-    {
-        auto knobArea = currentArea.removeFromLeft(colWidth);
-        band.ratioLabel.setBounds(knobArea.removeFromTop(labelHeight));
-        band.ratio.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
-    }
-    {
-        auto knobArea = currentArea.removeFromLeft(colWidth);
-        band.attackLabel.setBounds(knobArea.removeFromTop(labelHeight));
-        band.attack.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
-    }
-    {
-        auto knobArea = currentArea.removeFromLeft(colWidth);
-        band.releaseLabel.setBounds(knobArea.removeFromTop(labelHeight));
-        band.release.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
-    }
+    auto placeKnob = [&](juce::Slider& knob, juce::Label& lbl) {
+            auto knobArea = currentArea.removeFromLeft(colWidth);
+            auto labelArea = knobArea.removeFromTop(labelHeight)
+                .translated(0, 20);
+            lbl.setBounds(labelArea);
+            knob.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
+        };
+
+    placeKnob(band.threshold, band.thresholdLabel);
+    placeKnob(band.ratio, band.ratioLabel);
+    placeKnob(band.attack, band.attackLabel);
+    placeKnob(band.release, band.releaseLabel);
     {
         auto knobArea = currentArea;
-        band.makeupLabel.setBounds(knobArea.removeFromTop(labelHeight));
+        auto labelArea = knobArea.removeFromTop(labelHeight)
+            .translated(0, 5);
+        band.makeupLabel.setBounds(labelArea);
         band.makeup.setBounds(knobArea.withSizeKeepingCentre(knobDiameter, knobDiameter));
     }
 }
