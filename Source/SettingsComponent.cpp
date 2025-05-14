@@ -59,6 +59,12 @@ SettingsPanel::SettingsPanel(juce::AudioProcessorValueTreeState& vts)
     makePreset("Drum Punch", { 4,  2,  0,  0,  0,  0,  0,  0 });
     makePreset("Airy Sparkle", { 0,  0,  0,  0,  0,  0,  2,  5 });
 
+    titleLabel.setText("Frequency Response Preferences",
+        juce::dontSendNotification);
+    titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    titleLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(titleLabel);
+
     closeButton.setButtonText("X");
     closeButton.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
     closeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
@@ -94,6 +100,8 @@ void SettingsPanel::resized() {
     auto resetB = topBar.removeFromRight(60);
     closeButton.setBounds(closeB.reduced(2));
     resetButton.setBounds(resetB.reduced(2));
+    auto titleArea = rightArea.removeFromTop(30);
+    titleLabel.setBounds(titleArea.reduced(4, 2));
     auto curveFull = leftArea.removeFromTop(100);
     int  fw = curveFull.getWidth();
     int  margin = fw / 10;

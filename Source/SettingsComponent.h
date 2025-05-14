@@ -25,6 +25,7 @@ private:
     juce::OwnedArray<juce::TextButton> presets;
     juce::TextButton closeButton{ "X" };
     juce::TextButton resetButton{ "Reset" };
+    juce::Label titleLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SettingsPanel)
 };
