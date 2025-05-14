@@ -74,13 +74,16 @@ SettingsPanel::SettingsPanel(juce::AudioProcessorValueTreeState& vts)
 }
 
 void SettingsPanel::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colours::black.withAlpha(0.8f));
-    g.setColour(juce::Colours::white);
-    g.drawRect(getLocalBounds(), 2);
+    auto boundsF = getLocalBounds().toFloat();
+    constexpr float corner = 5.0f;
+    g.setColour(juce::Colours::black.withAlpha(0.9f));
+    g.fillRoundedRectangle(boundsF, corner);
+    g.setColour(juce::Colours::white.withAlpha(0.6f));
+    g.drawRoundedRectangle(boundsF, corner, 2.0f);
 }
 
 void SettingsPanel::resized() {
-    auto fullArea = getLocalBounds().reduced(10);
+    auto fullArea = getLocalBounds().reduced(20);
     auto leftArea = fullArea.removeFromLeft(fullArea.getWidth() * 3 / 4);
     auto rightArea = fullArea;
     auto topBar = rightArea.removeFromTop(30);
@@ -89,14 +92,9 @@ void SettingsPanel::resized() {
     closeButton.setBounds(closeB.reduced(2));
     resetButton.setBounds(resetB.reduced(2));
     auto curveFull = leftArea.removeFromTop(100);
-    auto insetW = int(curveFull.getWidth() * 0.1f);
-    auto curveW = int(curveFull.getWidth() * 0.8f);
-    juce::Rectangle<int> curveArea{
-        curveFull.getX() + insetW,
-        curveFull.getY(),
-        curveW,
-        curveFull.getHeight()
-    };
+    int  fw = curveFull.getWidth();
+    int  margin = fw / 10;
+    auto curveArea = curveFull.reduced(margin, 0);
     responseDisplay->setBounds(curveArea.reduced(4));
     int sliderW = leftArea.getWidth() / numBands;
     for (int i = 0; i < numBands; i++) {
@@ -129,21 +127,23 @@ void SettingsPanel::ResponseCurveComponent::paint(juce::Graphics& g) {
     g.fillRoundedRectangle(area, cornerSize);
     g.setColour(juce::Colours::white.withAlpha(0.2f));
     g.drawRoundedRectangle(area, cornerSize, 1.0f);
-
     const float minLog = std::log10(20.0f),
-        maxLog = std::log10(20000.0f);
+    maxLog = std::log10(20000.0f);
     static constexpr float freqs[numBands] = { 50,100,200,500,1000,2000,5000,10000 };
     juce::Path p;
+    float db0 = (float)sliders[0]->getValue();
+    float y0 = area.getY() + (1.0f - ((db0 + 12.0f) / 24.0f)) * area.getHeight();
+    p.startNewSubPath(area.getX(), y0);
     for (int i = 0; i < sliders.size(); i++) {
         float normX = (std::log10(freqs[i]) - minLog) / (maxLog - minLog);
         float x = area.getX() + normX * area.getWidth();
-
-        float db = (float)sliders[i]->getValue();  // –12…12
+        float db = (float)sliders[i]->getValue();
         float y = area.getY() + (1.0f - ((db + 12.0f) / 24.0f)) * area.getHeight();
-
-        if (i == 0)   p.startNewSubPath(x, y);
-        else          p.lineTo(x, y);
+        p.lineTo(x, y);
     }
+    float dbN = (float)sliders.getLast()->getValue();
+    float yN = area.getY() + (1.0f - ((dbN + 12.0f) / 24.0f)) * area.getHeight();
+    p.lineTo(area.getRight(), yN);
     g.setColour(juce::Colour(150, 180, 200));
     g.strokePath(p, juce::PathStrokeType(2.0f));
 }
