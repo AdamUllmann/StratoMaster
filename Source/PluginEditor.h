@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
@@ -11,35 +11,53 @@
 class SettingsPanel : public juce::Component
 {
 public:
-    SettingsPanel()
+    SettingsPanel(juce::AudioProcessorValueTreeState& vts)
+        : state(vts)
     {
-        // example controls—you can replace these with your real settings
-        addAndMakeVisible(optionA);
-        optionA.setButtonText("Global Option A");
-
-        addAndMakeVisible(optionB);
-        optionB.setButtonText("Global Option B");
+        for (int b = 0; b < 8; ++b) {
+            auto lbl = std::make_unique<juce::Label>();
+            lbl->setText("Band " + juce::String(b + 1), juce::dontSendNotification);
+            lbl->setColour(juce::Label::textColourId, juce::Colours::white);
+            addAndMakeVisible(*lbl);
+            labels.add(std::move(lbl));
+            auto sl = std::make_unique<juce::Slider>(juce::Slider::LinearHorizontal,
+                juce::Slider::TextBoxRight);
+            sl->setRange(-12.0, 12.0, 0.1);
+            sl->setTextValueSuffix(" dB");
+            addAndMakeVisible(*sl);
+            sliders.add(std::move(sl));
+            attachments.add(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+                state,
+                "BandTarget" + juce::String(b + 1),
+                *sliders.getLast()));
+        }
     }
 
     void paint(juce::Graphics& g) override
     {
-        // draw a semi-transparent background
         g.fillAll(juce::Colours::black.withAlpha(0.8f));
         g.setColour(juce::Colours::white);
         g.drawRect(getLocalBounds(), 2);
     }
 
-    void resized() override
-    {
-        // stack two buttons vertically
-        auto r = getLocalBounds().reduced(10);
-        optionA.setBounds(r.removeFromTop(30));
-        r.removeFromTop(10);
-        optionB.setBounds(r.removeFromTop(30));
+    void resized() override {
+        auto area = getLocalBounds().reduced(10);
+        const int rowH = 24;
+        for (int i = 0; i < sliders.size(); ++i) {
+            auto row = area.removeFromTop(rowH);
+            labels[i]->setBounds(row.removeFromLeft(60));
+            sliders[i]->setBounds(row.reduced(4, 0));
+            area.removeFromTop(6);
+        }
     }
 
 private:
-    juce::TextButton optionA, optionB;
+    juce::AudioProcessorValueTreeState& state;
+    juce::OwnedArray<juce::Label> labels;
+    juce::OwnedArray<juce::Slider> sliders;
+    juce::OwnedArray<juce::AudioProcessorValueTreeState::SliderAttachment> attachments;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SettingsPanel)
 };
 
 //==============================================================================
@@ -54,6 +72,9 @@ public:
 
 private:
     StratomasterAudioProcessor& audioProcessor;
+
+    GearButton settingsButton;
+    SettingsPanel settingsPanel{ audioProcessor.apvts };
 
     std::unique_ptr<CustomLookAndFeel> customLF;
 
@@ -72,9 +93,6 @@ private:
     int spinnerIndex = 0;
     const char* spinnerChars = "|/-\\";
     void timerCallback() override;
-
-    GearButton settingsButton;
-    SettingsPanel settingsPanel;
 
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 

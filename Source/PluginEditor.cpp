@@ -56,29 +56,16 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
     stopTimer();
 
     addAndMakeVisible(settingsButton);
-
-    // start hidden
-    addAndMakeVisible(settingsPanel);
-    settingsPanel.setVisible(false);
-
     settingsButton.onClick = [this]()
         {
-            // toggle visibility
-            const bool shouldShow = !settingsPanel.isVisible();
-            settingsPanel.setVisible(shouldShow);
-
-            if (shouldShow)
-            {
-                // give it its size right now
+            const bool show = !settingsPanel.isVisible();
+            settingsPanel.setVisible(show);
+            if (show)
                 settingsPanel.setBounds(getLocalBounds().reduced(10));
-                settingsPanel.toFront(false);
-            }
-            else
-            {
-                // hide it off‐screen or zero it
-                settingsPanel.setBounds(0, 0, 0, 0);
-            }
         };
+
+    addAndMakeVisible(settingsPanel);
+    settingsPanel.setVisible(false);
 
     setResizable(true, true);
     setResizeLimits(750, 400, 2000, 1400);
@@ -143,7 +130,7 @@ void StratomasterAudioProcessorEditor::resized()
     int labelWidth = 180;
     autoMasterStatusLabel.setBounds(topBar.getCentreX() - labelWidth / 2, topBar.getY(), labelWidth, topBarHeight);
     int gearSize = topBarHeight;
-    settingsButton.setBounds(autoEQButton.getRight() + 5, topBar.getY(), gearSize, gearSize);
+    settingsButton.setBounds(autoEQButton.getRight()-8, topBar.getY(), gearSize, gearSize);
     if (settingsPanel.isVisible())
         settingsPanel.setBounds(getLocalBounds().reduced(10));
 }

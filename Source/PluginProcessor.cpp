@@ -216,6 +216,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout StratomasterAudioProcessor::
         0.0f // default -> off
     ));
 
+    for (int b = 0; b < numBands; b++) {
+        auto id = "BandTarget" + juce::String(b + 1);
+        auto name = "Auto-EQ Offset Band " + juce::String(b + 1) + " (dB)";
+        params.push_back(std::make_unique<MyFloatParameter>(
+            id, name,
+            juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f),
+            0.0f  // default = flat
+        ));
+    }
+
     return { params.begin(), params.end() };
 }
 
@@ -398,29 +408,34 @@ void StratomasterAudioProcessor::doAutoEQFromFFT() {
     if (used < 1) return;
     float globalMean = sumAll / (float)used;
     float globalMeanDb = juce::Decibels::gainToDecibels(globalMean + 1e-9f);
-    for (int b = 0; b < numBands; ++b) {
-        float bandDbVal = juce::Decibels::gainToDecibels(bandMag[b] + 1e-9f);
-        if (bandDbVal < -60.0f) continue;
-        float diffDb = globalMeanDb - bandDbVal;
+    for (int b = 0; b < numBands; b++) {
+        float magLin = bandMag[b];
+        float bandDbVal = juce::Decibels::gainToDecibels(magLin + 1e-9f);
+        if (bandDbVal < -60.0f) {
+            continue;
+        }
+        float userOffsetDb = apvts.getRawParameterValue("BandTarget" + juce::String(b + 1))->load();
+        float bandTargetDb = globalMeanDb + userOffsetDb;
+        float diffDb = bandTargetDb - bandDbVal;
         int idx = diffIndex[b];
         diffHistory[b][idx] = diffDb;
         diffIndex[b] = (idx + 1) % diffHistorySize;
-        if (std::fabs(diffDb) < 1.5f) continue;
+        if (std::fabs(diffDb) < 1.5f)
+            continue;
         float stepScaleBoost = 0.0003f;
         float stepScaleCut = 0.0008f;
-        float stepScale = (diffDb > 0.f) ? stepScaleBoost : stepScaleCut;
+        float stepScale = (diffDb > 0.0f) ? stepScaleBoost : stepScaleCut;
         if (std::fabs(diffDb) >= 6.0f)
             stepScale *= 3.0f;
         float step = stepScale * diffDb;
         juce::String gainParamID = "Band" + juce::String(b + 1) + "Gain";
-        if (auto* param = apvts.getParameter(gainParamID)) {
-            if (auto* paramFloat = dynamic_cast<juce::AudioParameterFloat*>(param)) {
-                float oldDbVal = paramFloat->get();
-                float newDbVal = juce::jlimit(-12.0f, 12.0f, oldDbVal + step);
-                paramFloat->beginChangeGesture();
-                paramFloat->setValueNotifyingHost(paramFloat->getNormalisableRange().convertTo0to1(newDbVal));
-                paramFloat->endChangeGesture();
-            }
+        if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(gainParamID))) {
+            float oldDb = p->get();
+            float newDb = juce::jlimit(-12.0f, 12.0f, oldDb + step);
+            p->beginChangeGesture();
+            p->setValueNotifyingHost(
+                p->getNormalisableRange().convertTo0to1(newDb));
+            p->endChangeGesture();
         }
     }
     bool allStable = true;
