@@ -17,7 +17,7 @@ void CustomLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& bu
     float cornerSize = 6.0f;
     juce::Colour base = isButtonDown ? juce::Colour(120, 20, 20) :
         isMouseOverButton ? juce::Colour(80, 80, 80) :
-        juce::Colour(40, 40, 40);
+        backgroundColour;
     juce::Colour edge = juce::Colour(20, 20, 20);
     juce::ColourGradient grad(base, bounds.getX(), bounds.getY(),
         edge, bounds.getBottomLeft().getX(), bounds.getBottomLeft().getY(), false);

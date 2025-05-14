@@ -21,7 +21,7 @@ StratomasterAudioProcessorEditor::StratomasterAudioProcessorEditor(StratomasterA
 
     autoEQButton.setClickingTogglesState(true);
     autoEQButton.setButtonText("Auto Master");
-    autoEQButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey.brighter());
+    autoEQButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
     autoEQButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     autoEQButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::darkred.withAlpha(0.8f));
     autoEQButton.onClick = [this]()
