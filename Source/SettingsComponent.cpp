@@ -21,6 +21,9 @@ SettingsPanel::SettingsPanel(juce::AudioProcessorValueTreeState& vts)
         auto sl = std::make_unique<juce::Slider>(juce::Slider::LinearVertical, juce::Slider::TextBoxBelow);
         sl->setRange(-12.0, 12.0, 0.1);
         sl->setTextValueSuffix(" dB");
+        sl->setColour(juce::Slider::trackColourId, juce::Colour(150, 180, 250));
+        sl->setColour(juce::Slider::thumbColourId, juce::Colour(150, 180, 250));
+        sl->setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(150, 180, 250));
         addAndMakeVisible(*sl);
         sliders.add(std::move(sl));
         attachments.add(std::make_unique<
