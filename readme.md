@@ -1,13 +1,15 @@
 # Stratomaster
 
-![Stratomaster](https://github.com/AdamUllmann/images-for-repos/blob/main/stratomaster2.png?raw=true)
-
-**Stratomaster** is an all-in-one audio mastering plugin that includes:
+![Stratomastergif](https://github.com/AdamUllmann/images-for-repos/blob/main/stratogif.gif?raw=true)
+**Stratomaster** is an all-in-one, automatic audio mastering plugin that includes:
 - **8-Band Parametric (and Shelving) EQ**
 - **Multiband Compressor**
 - **Stereo Imager**
 - **Maximizer (Limiter)**
-- **Auto Mastering / Auto EQ** Feature
+- **Auto Mastering** Feature
+
+![Stratomaster](https://github.com/AdamUllmann/images-for-repos/blob/main/stratomasterall.png?raw=true)
+![Stratomaster](https://github.com/AdamUllmann/images-for-repos/blob/main/settings.png?raw=true)
 
 ---
 
@@ -26,7 +28,7 @@
 
 Stratomaster is a single plugin designed to handle multiple stages of mixing or mastering:
 - **EQ** for tone shaping (parametric, low/high shelf, plus optional low-pass and high-pass filters).
-- **Multiband compression** (in progress), for dynamic control of separate frequency bands.
+- **Multiband compression**, for dynamic control of separate frequency bands.
 - **Stereo imaging** to adjust stereo width.
 - **Maximizer** for final loudness and peak limiting.
 - **Auto Mastering** logic that can analyze the incoming frequency content and automatically adjust each EQ band (the “Auto EQ” process).
@@ -51,8 +53,6 @@ All parameters are controlled via a single `AudioProcessorValueTreeState`, so ch
 ---
 
 ## Multiband Compressor
-
-*(Currently in progress, conceptual code included.)*
 
 ### Features
 - **Multiple Frequency Bands** (e.g., Low, Mid, High or more).
